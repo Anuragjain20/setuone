@@ -4,6 +4,8 @@ import servicesRouter from "./services";
 import bookingsRouter from "./bookings";
 import craftsmenRouter from "./craftsmen";
 import adminRouter from "./admin";
+import testimonialsRouter from "./testimonials";
+import siteConfigRouter from "./site-config";
 
 const router: IRouter = Router();
 
@@ -12,5 +14,7 @@ router.use(servicesRouter);
 router.use(bookingsRouter);
 router.use(craftsmenRouter);
 router.use(adminRouter);
+router.use(testimonialsRouter);
+router.use(siteConfigRouter);
 
 export default router;

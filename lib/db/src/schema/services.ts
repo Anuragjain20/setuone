@@ -11,6 +11,7 @@ export const servicesTable = pgTable("services", {
   avgMaxPrice: integer("avg_max_price").notNull(),
   priority: text("priority").notNull().default("P0"),
   iconName: text("icon_name").notNull(),
+  imageUrl: text("image_url"),
 });
 
 export const insertServiceSchema = createInsertSchema(servicesTable).omit({ id: true });
