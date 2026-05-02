@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, real, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +20,11 @@ export const bookingsTable = pgTable("bookings", {
   convenienceFee: integer("convenience_fee"),
   rating: real("rating"),
   review: text("review"),
+  isFlagged: boolean("is_flagged").notNull().default(false),
+  flagReason: text("flag_reason"),
+  completionNotes: text("completion_notes"),
+  completionPhotoUrl: text("completion_photo_url"),
+  paymentStatus: text("payment_status").default("unpaid"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

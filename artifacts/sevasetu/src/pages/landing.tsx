@@ -432,23 +432,53 @@ export default function Landing() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-[#2C1F0E] text-[#C4B49A] py-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 font-bold text-xl text-white">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white text-xs font-black">SS</span>
+      <footer className="bg-[#2C1F0E] text-[#C4B49A] py-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 font-bold text-xl text-white mb-3">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <span className="text-white text-xs font-black">SS</span>
+                </div>
+                {cfg("company_name", "SevaSetu")}
+              </div>
+              <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Bharosemand Karigar, Ek Call Par")} · Indore, MP</p>
+              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 77777 77777")}</p>
             </div>
-            {cfg("company_name", "SevaSetu")}
+            {/* Services */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Services</p>
+              <div className="space-y-2 text-sm">
+                <Link href="/book" className="block hover:text-white transition-colors">Book a Service</Link>
+                <Link href="/bookings" className="block hover:text-white transition-colors">My Bookings</Link>
+                <Link href="/craftsman" className="block hover:text-white transition-colors">Karigar Portal</Link>
+                <Link href="/join" className="block hover:text-white transition-colors">Join as Karigar</Link>
+              </div>
+            </div>
+            {/* Company */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Company</p>
+              <div className="space-y-2 text-sm">
+                <Link href="/admin" className="block hover:text-white transition-colors">Admin Dashboard</Link>
+                <Link href="/admin/notifications" className="block hover:text-white transition-colors">Notifications</Link>
+                <Link href="/admin/craftsmen" className="block hover:text-white transition-colors">Craftsmen Registry</Link>
+              </div>
+            </div>
+            {/* Legal */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Legal</p>
+              <div className="space-y-2 text-sm">
+                <Link href="/terms" className="block hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/privacy" className="block hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/refund" className="block hover:text-white transition-colors">Refund Policy</Link>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-center">{cfg("company_tagline", "Bharosemand Karigar, Ek Call Par")} · Indore, MP</p>
-          <div className="flex gap-5 text-sm">
-            <Link href="/book" className="hover:text-white transition-colors">Book</Link>
-            <Link href="/bookings" className="hover:text-white transition-colors">Bookings</Link>
-            <Link href="/admin" className="hover:text-white transition-colors">Admin</Link>
+          <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#7A6A58]">
+            <p>© 2025 {cfg("company_name", "SevaSetu")}. All rights reserved.</p>
+            <p>Made with ❤ for Indore · GSTIN: 23XXXXX1234X1Z5</p>
           </div>
-        </div>
-        <div className="max-w-6xl mx-auto px-4 mt-6 pt-6 border-t border-white/10 text-center text-xs text-[#7A6A58]">
-          © 2025 {cfg("company_name", "SevaSetu")}. All rights reserved.
         </div>
       </footer>
     </div>

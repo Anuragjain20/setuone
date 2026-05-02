@@ -15,6 +15,7 @@ export const craftsmenTable = pgTable("craftsmen", {
   isAvailable: boolean("is_available").notNull().default(true),
   experience: integer("experience").notNull().default(0),
   bio: text("bio"),
+  applicationStatus: text("application_status").notNull().default("approved"), // pending | approved | rejected
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
