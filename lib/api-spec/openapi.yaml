@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SevaSetu API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: services
+    description: Service catalogue
+  - name: bookings
+    description: Booking operations
+  - name: craftsmen
+    description: Craftsman operations
+  - name: admin
+    description: Admin dashboard operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,229 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all service categories
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List all bookings
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, in_progress, completed, cancelled]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingBody"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get a single booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      summary: Update a booking (status, craftsman assignment, rating)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingBody"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /craftsmen:
+    get:
+      operationId: listCraftsmen
+      tags: [craftsmen]
+      summary: List all craftsmen
+      parameters:
+        - name: skill
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: available
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of craftsmen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Craftsman"
+    post:
+      operationId: createCraftsman
+      tags: [craftsmen]
+      summary: Add a new craftsman
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCraftsmanBody"
+      responses:
+        "201":
+          description: Craftsman created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Craftsman"
+
+  /craftsmen/{id}:
+    get:
+      operationId: getCraftsman
+      tags: [craftsmen]
+      summary: Get a single craftsman
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Craftsman details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Craftsman"
+    patch:
+      operationId: updateCraftsman
+      tags: [craftsmen]
+      summary: Update a craftsman
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCraftsmanBody"
+      responses:
+        "200":
+          description: Updated craftsman
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Craftsman"
+
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get dashboard summary metrics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /admin/revenue:
+    get:
+      operationId: getRevenueReport
+      tags: [admin]
+      summary: Get revenue report (daily breakdown)
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Revenue report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDay"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +261,254 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        avgMinPrice:
+          type: integer
+        avgMaxPrice:
+          type: integer
+        priority:
+          type: string
+          enum: [P0, P1, P2]
+        iconName:
+          type: string
+      required: [id, category, name, description, avgMinPrice, avgMaxPrice, priority, iconName]
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        serviceCategory:
+          type: string
+        serviceName:
+          type: string
+        address:
+          type: string
+        scheduledDate:
+          type: string
+        timeSlot:
+          type: string
+          enum: [morning, afternoon, evening]
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, in_progress, completed, cancelled]
+        craftsmanId:
+          type: integer
+          nullable: true
+        craftsmanName:
+          type: string
+          nullable: true
+        totalAmount:
+          type: integer
+          nullable: true
+        platformFee:
+          type: integer
+          nullable: true
+        convenienceFee:
+          type: integer
+          nullable: true
+        rating:
+          type: number
+          nullable: true
+        review:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, customerName, customerPhone, serviceCategory, serviceName, address, scheduledDate, timeSlot, description, status, createdAt]
+
+    CreateBookingBody:
+      type: object
+      properties:
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        serviceCategory:
+          type: string
+        serviceName:
+          type: string
+        address:
+          type: string
+        scheduledDate:
+          type: string
+        timeSlot:
+          type: string
+          enum: [morning, afternoon, evening]
+        description:
+          type: string
+      required: [customerName, customerPhone, serviceCategory, serviceName, address, scheduledDate, timeSlot, description]
+
+    UpdateBookingBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, in_progress, completed, cancelled]
+        craftsmanId:
+          type: integer
+          nullable: true
+        totalAmount:
+          type: integer
+        platformFee:
+          type: integer
+        convenienceFee:
+          type: integer
+        rating:
+          type: number
+        review:
+          type: string
+
+    Craftsman:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+        serviceAreas:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        totalJobs:
+          type: integer
+        isVerified:
+          type: boolean
+        isAvailable:
+          type: boolean
+        experience:
+          type: integer
+        bio:
+          type: string
+          nullable: true
+        joinedAt:
+          type: string
+      required: [id, name, phone, skills, serviceAreas, rating, totalJobs, isVerified, isAvailable, experience, joinedAt]
+
+    CreateCraftsmanBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        photoUrl:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        serviceAreas:
+          type: array
+          items:
+            type: string
+        experience:
+          type: integer
+        bio:
+          type: string
+      required: [name, phone, skills, serviceAreas, experience]
+
+    UpdateCraftsmanBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        photoUrl:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        serviceAreas:
+          type: array
+          items:
+            type: string
+        isVerified:
+          type: boolean
+        isAvailable:
+          type: boolean
+        experience:
+          type: integer
+        bio:
+          type: string
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalBookings:
+          type: integer
+        pendingBookings:
+          type: integer
+        completedBookings:
+          type: integer
+        activeBookings:
+          type: integer
+        totalCraftsmen:
+          type: integer
+        verifiedCraftsmen:
+          type: integer
+        availableCraftsmen:
+          type: integer
+        gmvThisMonth:
+          type: integer
+        revenueThisMonth:
+          type: integer
+        avgRating:
+          type: number
+        bookingsThisWeek:
+          type: integer
+        bookingsByCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
+            required: [category, count]
+      required: [totalBookings, pendingBookings, completedBookings, activeBookings, totalCraftsmen, verifiedCraftsmen, availableCraftsmen, gmvThisMonth, revenueThisMonth, avgRating, bookingsThisWeek, bookingsByCategory]
+
+    RevenueDay:
+      type: object
+      properties:
+        date:
+          type: string
+        gmv:
+          type: integer
+        revenue:
+          type: integer
+        completedJobs:
+          type: integer
+      required: [date, gmv, revenue, completedJobs]
