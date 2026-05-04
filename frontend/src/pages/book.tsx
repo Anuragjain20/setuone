@@ -91,7 +91,7 @@ export default function Book() {
         },
       });
       toast({ title: "Booking Submitted!", description: "We'll confirm your booking within 30 minutes via WhatsApp." });
-      navigate("/bookings");
+      navigate("/");
     } catch {
       toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
     }
@@ -330,9 +330,9 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 const FALLBACK_SERVICES = [
-  { id: 1, category: "Plumbing", name: "Plumbing", iconName: "wrench", avgMinPrice: 500, avgMaxPrice: 2000, priority: "P0", description: "" },
-  { id: 2, category: "Carpentry", name: "Carpentry", iconName: "hammer", avgMinPrice: 800, avgMaxPrice: 5000, priority: "P0", description: "" },
-  { id: 3, category: "Electrical", name: "Electrical", iconName: "zap", avgMinPrice: 400, avgMaxPrice: 3000, priority: "P0", description: "" },
-  { id: 4, category: "Painting", name: "Painting", iconName: "paint", avgMinPrice: 5000, avgMaxPrice: 40000, priority: "P0", description: "" },
+  { id: 1, category: "Plumbing", name: "Plumbing", iconName: "wrench", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", description: "" },
+  { id: 2, category: "Carpentry", name: "Carpentry", iconName: "hammer", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", description: "" },
+  { id: 3, category: "Electrical", name: "Electrical", iconName: "zap", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", description: "" },
+  { id: 4, category: "Painting", name: "Painting", iconName: "paint", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", description: "" },
 ];
 

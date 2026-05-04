@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { AdminGuard } from "@/components/admin-guard";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Book from "@/pages/book";
@@ -14,7 +15,6 @@ import AdminNotifications from "@/pages/admin-notifications";
 import Join from "@/pages/join";
 import CraftsmanPortal from "@/pages/craftsman-portal";
 import Invoice from "@/pages/invoice";
-import Pay from "@/pages/pay";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import Refund from "@/pages/refund";
@@ -28,7 +28,6 @@ function Router() {
       <Route path="/book" component={Book} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/bookings/:id/invoice" component={Invoice} />
-      <Route path="/bookings/:id/pay" component={Pay} />
       <Route path="/admin" component={Admin} />
       <Route path="/admin/craftsmen" component={AdminCraftsmen} />
       <Route path="/admin/content" component={AdminContent} />
@@ -49,7 +48,9 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
+            <AdminGuard>
+              <Router />
+            </AdminGuard>
           </WouterRouter>
           <Toaster />
         </TooltipProvider>

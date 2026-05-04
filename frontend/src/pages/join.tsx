@@ -57,7 +57,7 @@ export default function Join() {
             </div>
           </motion.div>
           <h1 className="text-2xl font-bold text-[#1A1209] mb-3">Application Submitted!</h1>
-          <p className="text-[#5C5043] mb-2">Thank you for applying to join SevaSetu. Our team will review your application and contact you within 2–3 business days.</p>
+          <p className="text-[#5C5043] mb-2">Thank you for applying to join SetuOne. Our team will review your application and contact you within 2–3 business days.</p>
           <p className="text-sm text-[#8A7A68]">For any queries, WhatsApp us at +91 77777 77777</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function Join() {
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Wrench className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-[#1A1209] mb-3">Join SevaSetu as a Karigar</h1>
+          <h1 className="text-3xl font-bold text-[#1A1209] mb-3">Join SetuOne as a Karigar</h1>
           <p className="text-[#5C5043] max-w-md mx-auto">Get regular work, guaranteed payments, and build your reputation in Indore. 50+ verified craftsmen already trust us.</p>
           <div className="flex justify-center gap-6 mt-5">
             {[["₹0", "Joining fee"], ["30+", "Jobs/month avg"], ["24h", "Payment after job"]].map(([v, l]) => (

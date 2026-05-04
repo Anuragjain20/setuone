@@ -19,6 +19,17 @@ type Testimonial = {
   avatarUrl: string | null; isActive: boolean; sortOrder: number;
 };
 
+const SERVICE_ICONS: Record<string, string> = {
+  wrench: "🔧",
+  zap: "⚡",
+  paint: "🎨",
+  hammer: "🔨",
+  wind: "❄️",
+  sparkles: "✨",
+  bug: "🛡️",
+  camera: "📷",
+};
+
 const TABS = ["Company", "Hero", "Services", "Testimonials", "Pricing"] as const;
 type Tab = typeof TABS[number];
 
@@ -117,15 +128,15 @@ function SaveBtn({ loading, onClick }: { loading: boolean; onClick: () => void }
 }
 
 function CompanyTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u: Config) => void; loading: boolean }) {
-  const [name, setName] = useState(cfg("company_name") || "SevaSetu");
+  const [name, setName] = useState(cfg("company_name") || "SetuOne");
   const [tagline, setTagline] = useState(cfg("company_tagline") || "Bharosemand Karigar, Ek Call Par");
-  const [phone, setPhone] = useState(cfg("company_phone") || "+91 77777 77777");
-  const [whatsapp, setWhatsapp] = useState(cfg("company_whatsapp") || "917777777777");
+  const [phone, setPhone] = useState(cfg("company_phone") || "+91 93998 58706");
+  const [whatsapp, setWhatsapp] = useState(cfg("company_whatsapp") || "919399858706");
   const [city, setCity] = useState(cfg("company_city") || "Indore");
 
   // re-sync when config loads
   useState(() => {
-    setName(cfg("company_name") || "SevaSetu");
+    setName(cfg("company_name") || "SetuOne");
     setTagline(cfg("company_tagline") || "Bharosemand Karigar, Ek Call Par");
   });
 
@@ -137,11 +148,11 @@ function CompanyTab({ cfg, save, loading }: { cfg: (k: string) => string; save: 
           <h2 className="font-semibold">Company Info</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-5">
-          <Field label="Company Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="SevaSetu" /></Field>
+          <Field label="Company Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="SetuOne" /></Field>
           <Field label="City"><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Indore" /></Field>
           <Field label="Tagline (Hindi/English)"><Input value={tagline} onChange={(e) => setTagline(e.target.value)} /></Field>
-          <Field label="Display Phone"><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 77777 77777" /></Field>
-          <Field label="WhatsApp Number (digits only, with country code)"><Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="917777777777" /></Field>
+          <Field label="Display Phone"><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 93998 58706" /></Field>
+          <Field label="WhatsApp Number (digits only, with country code)"><Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="919399858706" /></Field>
         </div>
       </Card>
       <div className="flex justify-end">
@@ -201,7 +212,7 @@ function HeroTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u:
           <div>
             {photo ? (
               <div className="rounded-xl overflow-hidden aspect-[3/2] bg-muted">
-                <img src={photo} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display="none"; }} />
+                <img src={photo} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               </div>
             ) : (
               <div className="rounded-xl aspect-[3/2] bg-muted flex items-center justify-center text-muted-foreground text-sm">Photo preview</div>
@@ -234,6 +245,8 @@ function HeroTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u:
 
 function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc: any }) {
   const [editing, setEditing] = useState<Record<number, string>>({});
+  const [adding, setAdding] = useState(false);
+  const [newSvc, setNewSvc] = useState({ category: "", name: "", description: "", avgMinPrice: 100, avgMaxPrice: 200, iconName: "wrench" });
 
   const saveImage = async (id: number) => {
     const url = editing[id];
@@ -248,9 +261,54 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
     }
   };
 
+  const removeService = async (id: number) => {
+    if (!confirm("Delete this service?")) return;
+    try {
+      await fetch(`/api/services/${id}`, { method: "DELETE" });
+      qc.invalidateQueries({ queryKey: ["services"] });
+      toast({ title: "Deleted" });
+    } catch {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  };
+
+  const createService = async () => {
+    if (!newSvc.category || !newSvc.name) { toast({ title: "Category and Name required", variant: "destructive" }); return; }
+    try {
+      const res = await fetch("/api/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSvc) });
+      if (!res.ok) throw new Error();
+      qc.invalidateQueries({ queryKey: ["services"] });
+      setAdding(false);
+      setNewSvc({ category: "", name: "", description: "", avgMinPrice: 100, avgMaxPrice: 200, iconName: "wrench" });
+      toast({ title: "Service added" });
+    } catch {
+      toast({ title: "Failed to add", variant: "destructive" });
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <p className="text-sm text-muted-foreground">Set a photo URL for each service card on the landing page.</p>
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">Manage your services and set photo URLs for the landing page cards.</p>
+        <Button onClick={() => setAdding(!adding)} size="sm"><Plus className="w-4 h-4 mr-1" /> Add Service</Button>
+      </div>
+
+      {adding && (
+        <Card className="p-5 border-primary/20 bg-primary/5">
+          <h3 className="font-semibold mb-4">Add New Service</h3>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <Field label="Category / Display Name (e.g. Plumbing)"><Input value={newSvc.category} onChange={(e) => setNewSvc({ ...newSvc, category: e.target.value, name: e.target.value })} /></Field>
+            <Field label="Description"><Input value={newSvc.description} onChange={(e) => setNewSvc({ ...newSvc, description: e.target.value })} /></Field>
+            <Field label="Min Price"><Input type="number" value={newSvc.avgMinPrice} onChange={(e) => setNewSvc({ ...newSvc, avgMinPrice: parseInt(e.target.value) || 0 })} /></Field>
+            <Field label="Max Price"><Input type="number" value={newSvc.avgMaxPrice} onChange={(e) => setNewSvc({ ...newSvc, avgMaxPrice: parseInt(e.target.value) || 0 })} /></Field>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button onClick={createService}>Save Service</Button>
+          </div>
+        </Card>
+      )}
+
       {services.map((svc) => {
         const url = editing[svc.id] !== undefined ? editing[svc.id] : (svc.imageUrl ?? "");
         return (
@@ -258,13 +316,18 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
             <div className="flex flex-col sm:flex-row gap-4 items-start">
               <div className="w-24 h-16 rounded-lg bg-muted overflow-hidden shrink-0">
                 {url ? (
-                  <img src={url} alt={svc.category} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display="none"; }} />
+                  <img src={url} alt={svc.category} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">{{"wrench":"🔧","zap":"⚡","paint":"🎨","hammer":"🔨","wind":"❄️","sparkles":"✨","bug":"🛡️","camera":"📷"}[svc.iconName] ?? "🔨"}</div>
+                  <div className="w-full h-full flex items-center justify-center text-2xl">{SERVICE_ICONS[svc.iconName] ?? "🔨"}</div>
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-foreground mb-1">{svc.category}</p>
+                <div className="flex justify-between items-start mb-1">
+                  <p className="font-semibold text-foreground">{svc.category}</p>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => removeService(svc.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mb-2">₹{svc.avgMinPrice.toLocaleString("en-IN")} – ₹{svc.avgMaxPrice.toLocaleString("en-IN")}</p>
                 <div className="flex gap-2">
                   <Input
@@ -274,7 +337,7 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
                     className="text-sm flex-1"
                   />
                   <Button size="sm" onClick={() => saveImage(svc.id)} disabled={editing[svc.id] === undefined}>
-                    <Save className="w-3.5 h-3.5 mr-1" /> Save
+                    <Save className="w-3.5 h-3.5 mr-1" /> Save Image
                   </Button>
                 </div>
               </div>
@@ -334,7 +397,7 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
             <Field label="Avatar Image URL (optional)"><Input value={newT.avatarUrl} onChange={(e) => setNewT((p) => ({ ...p, avatarUrl: e.target.value }))} placeholder="https://..." /></Field>
             <Field label="Rating (1–5)">
               <div className="flex gap-1">
-                {[1,2,3,4,5].map((s) => (
+                {[1, 2, 3, 4, 5].map((s) => (
                   <button key={s} onClick={() => setNewT((p) => ({ ...p, rating: s }))} className={`w-8 h-8 rounded-lg text-lg transition-all ${s <= newT.rating ? "text-amber-400" : "text-muted-foreground/30"}`}>
                     ★
                   </button>
@@ -358,7 +421,7 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
         <Card key={t.id} className={`p-5 ${!t.isActive ? "opacity-60" : ""}`}>
           <div className="flex gap-4 items-start">
             {t.avatarUrl ? (
-              <img src={t.avatarUrl} alt={t.name} className="w-10 h-10 rounded-full object-cover bg-muted shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display="none"; }} />
+              <img src={t.avatarUrl} alt={t.name} className="w-10 h-10 rounded-full object-cover bg-muted shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
             ) : (
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">{t.name.charAt(0)}</div>
             )}
@@ -367,7 +430,7 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
                 <p className="font-semibold text-sm text-foreground">{t.name}</p>
                 <p className="text-xs text-muted-foreground">· {t.location}</p>
                 <div className="flex gap-0.5 ml-1">
-                  {[1,2,3,4,5].map((s) => <span key={s} className={`text-xs ${s <= t.rating ? "text-amber-400" : "text-muted-foreground/30"}`}>★</span>)}
+                  {[1, 2, 3, 4, 5].map((s) => <span key={s} className={`text-xs ${s <= t.rating ? "text-amber-400" : "text-muted-foreground/30"}`}>★</span>)}
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed truncate">"{t.text}"</p>
@@ -395,9 +458,9 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
 function PricingTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u: Config) => void; loading: boolean }) {
   const [odLabel, setOdLabel] = useState(cfg("pricing_on_demand_label") || "On Demand");
   const [stdLabel, setStdLabel] = useState(cfg("pricing_amc_standard_label") || "AMC Standard");
-  const [stdPrice, setStdPrice] = useState(cfg("pricing_amc_standard_price") || "2499");
+  const [stdPrice, setStdPrice] = useState(cfg("pricing_amc_standard_price") || "1999");
   const [premLabel, setPremLabel] = useState(cfg("pricing_amc_premium_label") || "AMC Premium");
-  const [premPrice, setPremPrice] = useState(cfg("pricing_amc_premium_price") || "5999");
+  const [premPrice, setPremPrice] = useState(cfg("pricing_amc_premium_price") || "2999");
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -431,4 +494,3 @@ function PricingTab({ cfg, save, loading }: { cfg: (k: string) => string; save: 
     </motion.div>
   );
 }
-

@@ -28,7 +28,7 @@ export default function Refund() {
           <tbody>
             <tr><td>Cancelled before work starts</td><td>100% of job fee + convenience fee</td><td>3–5 business days</td></tr>
             <tr><td>Craftsman no-show</td><td>100% + ₹100 credit</td><td>1–2 business days</td></tr>
-            <tr><td>Poor quality (proven)</td><td>Up to 50% at SevaSetu's discretion</td><td>5–7 business days</td></tr>
+            <tr><td>Poor quality (proven)</td><td>Up to 50% at SetuOne's discretion</td><td>5–7 business days</td></tr>
             <tr><td>After work completion</td><td>Not eligible</td><td>—</td></tr>
           </tbody>
         </table>
@@ -44,7 +44,7 @@ export default function Refund() {
         <p>Refunds are processed to the original payment method — UPI, card, or bank transfer. Cash payments are refunded via UPI. Contact us if you need an alternate refund method.</p>
 
         <h2>8. Contact</h2>
-        <p><strong>refunds@sevasetu.in</strong> · +91 77777 77777 · Monday–Saturday, 9 AM – 7 PM</p>
+        <p><strong>refunds@setuone.in</strong> · +91 77777 77777 · Monday–Saturday, 9 AM – 7 PM</p>
       </div>
     </div>
   );

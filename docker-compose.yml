@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
@@ -10,9 +8,11 @@ services:
       - backend_db:/app/data
     environment:
       - DATABASE_URL=sqlite:////app/data/sql_app.db
-      - SESSION_SECRET=change-me-use-a-real-secret
+      - SESSION_SECRET=${SESSION_SECRET:?set SESSION_SECRET in .env}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:?set ADMIN_USERNAME in .env}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
       - ENVIRONMENT=production
-      - ALLOWED_ORIGINS=http://localhost,http://localhost:80
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
       - UPLOAD_DIR=/app/uploads
 
   frontend:

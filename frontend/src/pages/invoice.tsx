@@ -36,8 +36,8 @@ export default function Invoice() {
           <div className="flex items-start justify-between mb-8">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><span className="text-white text-xs font-black">SS</span></div>
-                <span className="text-xl font-bold text-[#1A1209]">SevaSetu</span>
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><span className="text-white text-xs font-black">SO</span></div>
+                <span className="text-xl font-bold text-[#1A1209]">SetuOne</span>
               </div>
               <p className="text-sm text-[#8A7A68]">Indore, Madhya Pradesh</p>
               <p className="text-sm text-[#8A7A68]">+91 77777 77777</p>
@@ -117,7 +117,7 @@ export default function Invoice() {
 
           {/* Footer */}
           <div className="border-t border-[#EDE8E0] pt-4 mt-6 text-center">
-            <p className="text-xs text-[#8A7A68]">Thank you for choosing SevaSetu · Bharosemand Karigar, Ek Call Par</p>
+            <p className="text-xs text-[#8A7A68]">Thank you for choosing SetuOne · Bharosemand Karigar, Ek Call Par</p>
             <p className="text-xs text-[#8A7A68]">For support: +91 77777 77777 · Indore, MP</p>
           </div>
         </div>

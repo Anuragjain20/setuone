@@ -12,7 +12,14 @@ const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0, transi
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.09 } } };
 
 const SERVICE_ICONS: Record<string, string> = {
-  wrench: "🔧", zap: "⚡", paint: "🎨", hammer: "🔨", wind: "❄️", sparkles: "✨", bug: "🛡️", camera: "📷"
+  wrench: "🔧",
+  zap: "⚡",
+  paint: "🎨",
+  hammer: "🔨",
+  wind: "❄️",
+  sparkles: "✨",
+  bug: "🛡️",
+  camera: "📷",
 };
 
 const HOW_IT_WORKS = [
@@ -31,10 +38,34 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
   const sz = size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
   return (
     <div className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map((s) => (
+      {[1, 2, 3, 4, 5].map((s) => (
         <Star key={s} className={`${sz} ${s <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
       ))}
     </div>
+  );
+}
+
+function ServiceCard({ service }: { service: any }) {
+  const icon = SERVICE_ICONS[service.iconName] ?? "🔨";
+  const description = service.description || "Verified help for repairs, installation, and routine home work.";
+
+  return (
+    <Link href={`/book?service=${encodeURIComponent(service.category)}`}>
+      <div className="group h-full rounded-xl border border-[#EDE8E0] bg-[#FAF8F4] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-white hover:shadow-md cursor-pointer">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#E8DFD0] text-2xl transition-colors group-hover:bg-primary/10">
+            {icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-[#1A1209] text-sm leading-tight group-hover:text-primary transition-colors">{service.category}</h3>
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#B8A894] transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
+            <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[#6F6254]">{description}</p>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -149,38 +180,21 @@ export default function Landing() {
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
-            <motion.div variants={fadeUp} className="mb-10">
-              <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Our Services</p>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#1A1209]">Every fix your home<br />will ever ask for.</h2>
+            <motion.div variants={fadeUp} className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Our Services</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#1A1209]">Every fix your home<br />will ever ask for.</h2>
+              </div>
+              <Link href="/book">
+                <Button variant="outline" className="w-fit border-[#D4C5B0] text-[#1A1209] hover:bg-[#F0EBE1]">
+                  View booking flow <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </motion.div>
-            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <motion.div variants={stagger} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {allServices.map((service) => (
                 <motion.div key={service.id} variants={fadeUp}>
-                  <Link href={`/book?service=${encodeURIComponent(service.category)}`}>
-                    <div className="group rounded-2xl overflow-hidden border border-[#EDE8E0] hover:border-primary/30 hover:shadow-md transition-all duration-200 bg-[#FAF8F4] cursor-pointer">
-                      <div className="aspect-[4/3] bg-[#E8DFD0] overflow-hidden relative">
-                        {(service as any).imageUrl ? (
-                          <img
-                            src={(service as any).imageUrl}
-                            alt={service.category}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-4xl">
-                            {SERVICE_ICONS[service.iconName] ?? "🔨"}
-                          </div>
-                        )}
-                        <div className="absolute top-2 right-2 bg-white/90 text-[10px] font-bold text-primary px-2 py-0.5 rounded-full uppercase tracking-wide">
-                          Book Now
-                        </div>
-                      </div>
-                      <div className="p-3">
-                        <h3 className="font-semibold text-[#1A1209] text-sm mb-0.5 group-hover:text-primary transition-colors">{service.category}</h3>
-                        <p className="text-xs text-[#8A7A68]">₹{service.avgMinPrice.toLocaleString("en-IN")}+</p>
-                      </div>
-                    </div>
-                  </Link>
+                  <ServiceCard service={service} />
                 </motion.div>
               ))}
             </motion.div>
@@ -306,7 +320,7 @@ export default function Landing() {
             <motion.div variants={fadeUp} className="mb-12 text-center">
               <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Pricing</p>
               <h2 className="text-3xl md:text-4xl font-bold text-[#1A1209]">Pay per job, or save with an AMC.</h2>
-              <p className="text-[#5C5043] mt-2 text-base">Annual Maintenance Contracts for Indore families and landlords.</p>
+              <p className="text-[#5C5043] mt-2 text-base">Basic visit pricing starts around ₹100-₹200. Final job cost is confirmed after inspection.</p>
             </motion.div>
             <motion.div variants={stagger} className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
               {/* On Demand */}
@@ -336,7 +350,7 @@ export default function Landing() {
                   </div>
                   <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">{cfg("pricing_amc_standard_label", "AMC Standard")}</p>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <p className="text-3xl font-black text-[#1A1209]">₹{Number(cfg("pricing_amc_standard_price", "2499")).toLocaleString("en-IN")}</p>
+                    <p className="text-3xl font-black text-[#1A1209]">₹{Number(cfg("pricing_amc_standard_price", "1999")).toLocaleString("en-IN")}</p>
                     <span className="text-sm text-[#8A7A68]">/year</span>
                   </div>
                   <p className="text-sm text-[#8A7A68] mb-5">Best for homeowners</p>
@@ -358,7 +372,7 @@ export default function Landing() {
                 <Card className="p-6 border-[#EDE8E0] bg-[#2C1F0E] h-full flex flex-col">
                   <p className="text-xs font-bold text-primary/80 uppercase tracking-wider mb-1">{cfg("pricing_amc_premium_label", "AMC Premium")}</p>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <p className="text-3xl font-black text-white">₹{Number(cfg("pricing_amc_premium_price", "5999")).toLocaleString("en-IN")}</p>
+                    <p className="text-3xl font-black text-white">₹{Number(cfg("pricing_amc_premium_price", "2999")).toLocaleString("en-IN")}</p>
                     <span className="text-sm text-[#9C8C7A]">/year</span>
                   </div>
                   <p className="text-sm text-[#9C8C7A] mb-5">For landlords & large homes</p>
@@ -401,10 +415,10 @@ export default function Landing() {
                     Request a Karigar <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
-                <a href={`tel:${cfg("company_phone", "+917777777777")}`}>
+                <a href={`tel:${cfg("company_phone", "+91 93998 58706").replace(/\s/g, "")}`}>
                   <Button size="lg" variant="outline" className="border-[#D4C5B0] text-[#1A1209] h-12 px-7 rounded-xl font-semibold hover:bg-[#F0EBE1]">
                     <Phone className="mr-2 w-4 h-4" />
-                    {cfg("company_phone", "+91 77777 77777")}
+                    {cfg("company_phone", "+91 93998 58706")}
                   </Button>
                 </a>
               </motion.div>
@@ -439,12 +453,12 @@ export default function Landing() {
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 font-bold text-xl text-white mb-3">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-white text-xs font-black">SS</span>
+                  <span className="text-white text-xs font-black">SO</span>
                 </div>
-                {cfg("company_name", "SevaSetu")}
+                {cfg("company_name", "SetuOne")}
               </div>
-              <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Bharosemand Karigar, Ek Call Par")} · Indore, MP</p>
-              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 77777 77777")}</p>
+              <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Bharosemand Karigar, Ek Call Par")} · {cfg("company_city", "Indore")}</p>
+              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 93998 58706")}</p>
             </div>
             {/* Services */}
             <div>
@@ -452,19 +466,10 @@ export default function Landing() {
               <div className="space-y-2 text-sm">
                 <Link href="/book" className="block hover:text-white transition-colors">Book a Service</Link>
                 <Link href="/bookings" className="block hover:text-white transition-colors">My Bookings</Link>
-                <Link href="/craftsman" className="block hover:text-white transition-colors">Karigar Portal</Link>
-                <Link href="/join" className="block hover:text-white transition-colors">Join as Karigar</Link>
+
               </div>
             </div>
-            {/* Company */}
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Company</p>
-              <div className="space-y-2 text-sm">
-                <Link href="/admin" className="block hover:text-white transition-colors">Admin Dashboard</Link>
-                <Link href="/admin/notifications" className="block hover:text-white transition-colors">Notifications</Link>
-                <Link href="/admin/craftsmen" className="block hover:text-white transition-colors">Craftsmen Registry</Link>
-              </div>
-            </div>
+
             {/* Legal */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Legal</p>
@@ -476,8 +481,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#7A6A58]">
-            <p>© 2025 {cfg("company_name", "SevaSetu")}. All rights reserved.</p>
-            <p>Made with ❤ for Indore · GSTIN: 23XXXXX1234X1Z5</p>
+            <p>© {new Date().getFullYear()} {cfg("company_name", "SetuOne")}. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -486,9 +490,8 @@ export default function Landing() {
 }
 
 const FALLBACK_SERVICES = [
-  { id: 1, category: "Plumbing", iconName: "wrench", avgMinPrice: 500, avgMaxPrice: 2000, priority: "P0", imageUrl: null },
-  { id: 2, category: "Carpentry", iconName: "hammer", avgMinPrice: 800, avgMaxPrice: 5000, priority: "P0", imageUrl: null },
-  { id: 3, category: "Electrical", iconName: "zap", avgMinPrice: 400, avgMaxPrice: 3000, priority: "P0", imageUrl: null },
-  { id: 4, category: "Painting", iconName: "paint", avgMinPrice: 5000, avgMaxPrice: 40000, priority: "P0", imageUrl: null },
+  { id: 1, category: "Plumbing", description: "Tap leaks, pipe fittings, bathroom fixtures, and drain issues.", iconName: "wrench", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", imageUrl: null },
+  { id: 2, category: "Carpentry", description: "Door repair, furniture fixes, shelves, cabinets, and fittings.", iconName: "hammer", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", imageUrl: null },
+  { id: 3, category: "Electrical", description: "Switchboards, wiring checks, fan fitting, and basic repairs.", iconName: "zap", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", imageUrl: null },
+  { id: 4, category: "Painting", description: "Touch-ups, wall patches, waterproofing checks, and repaint work.", iconName: "paint", avgMinPrice: 100, avgMaxPrice: 200, priority: "P0", imageUrl: null },
 ];
-

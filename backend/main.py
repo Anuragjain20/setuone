@@ -1,36 +1,39 @@
 import os
 import random
 import datetime
-import shutil
 import uuid
 import logging
-from typing import List, Optional
+import secrets
+from typing import Optional
 from collections import defaultdict
 
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Request
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from starlette.middleware.sessions import SessionMiddleware
 
 import models
-from database import engine, get_db
+from database import get_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("sevasetu")
+logger = logging.getLogger("setuone")
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Seva-Setu API")
+app = FastAPI(title="SetuOne API")
 
 # ---------------------------------------------------------------------------
 # Middleware
 # ---------------------------------------------------------------------------
 SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me-in-production")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin" if ENVIRONMENT != "production" else "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin" if ENVIRONMENT != "production" else "")
+
+if ENVIRONMENT == "production" and SESSION_SECRET in {"", "change-me-in-production", "change-me-use-a-real-secret"}:
+    raise RuntimeError("SESSION_SECRET must be set to a strong unique value in production")
+if ENVIRONMENT == "production" and (not ADMIN_USERNAME or not ADMIN_PASSWORD):
+    raise RuntimeError("ADMIN_USERNAME and ADMIN_PASSWORD must be set in production")
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
@@ -48,25 +51,9 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 MAX_UPLOAD_MB = 10
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".pdf"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
-
-
-@app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(400, f"File type {ext} not allowed. Use: {', '.join(ALLOWED_EXTENSIONS)}")
-    contents = await file.read()
-    if len(contents) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(400, f"File too large. Max {MAX_UPLOAD_MB}MB.")
-    unique_name = f"{uuid.uuid4()}{ext}"
-    path = os.path.join(UPLOAD_DIR, unique_name)
-    with open(path, "wb") as f:
-        f.write(contents)
-    logger.info(f"File uploaded: {unique_name} ({len(contents)} bytes)")
-    return {"url": f"/uploads/{unique_name}"}
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +74,10 @@ CRAFTSMAN_SAFE_FIELDS = {
 }
 
 
+def clamp_mvp_price(value) -> int:
+    return max(100, min(200, int(value)))
+
+
 def get_current_user(request: Request, db: Session):
     uid = request.session.get("user_id")
     if not uid:
@@ -102,12 +93,30 @@ def require_auth(request: Request, db: Session = Depends(get_db)):
 
 
 def require_admin(request: Request, db: Session = Depends(get_db)):
+    if request.session.get("admin_auth") is True:
+        return {"admin": True}
     user = get_current_user(request, db)
     if not user:
         raise HTTPException(401, "Authentication required")
-    if ADMIN_PHONES and user.phone not in ADMIN_PHONES:
+    if not ADMIN_PHONES or user.phone not in ADMIN_PHONES:
         raise HTTPException(403, "Admin access required")
     return user
+
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...), _admin=Depends(require_admin)):
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(400, f"File type {ext} not allowed. Use: {', '.join(ALLOWED_EXTENSIONS)}")
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_MB * 1024 * 1024:
+        raise HTTPException(400, f"File too large. Max {MAX_UPLOAD_MB}MB.")
+    unique_name = f"{uuid.uuid4()}{ext}"
+    path = os.path.join(UPLOAD_DIR, unique_name)
+    with open(path, "wb") as f:
+        f.write(contents)
+    logger.info(f"File uploaded: {unique_name} ({len(contents)} bytes)")
+    return {"url": f"/uploads/{unique_name}"}
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +145,7 @@ def request_otp(data: dict, db: Session = Depends(get_db)):
     else:
         user = models.User(phone=phone, last_otp=otp, otp_expires_at=expires)
         db.add(user)
-    notification = models.Notification(user_phone=phone, title="OTP", message=f"Your SevaSetu OTP is {otp}", type="info")
+    notification = models.Notification(user_phone=phone, title="OTP", message=f"Your SetuOne OTP is {otp}", type="info")
     db.add(notification)
     db.commit()
     logger.info(f"OTP requested for {phone[:4]}****")
@@ -197,6 +206,32 @@ def logout(request: Request):
     return {"ok": True}
 
 
+@app.post("/api/admin/login")
+def admin_login(data: dict, request: Request):
+    username = str(data.get("username") or "")
+    password = str(data.get("password") or "")
+    if not (
+        ADMIN_USERNAME
+        and ADMIN_PASSWORD
+        and secrets.compare_digest(username, ADMIN_USERNAME)
+        and secrets.compare_digest(password, ADMIN_PASSWORD)
+    ):
+        raise HTTPException(401, "Invalid admin credentials")
+    request.session["admin_auth"] = True
+    return {"ok": True}
+
+
+@app.post("/api/admin/logout")
+def admin_logout(request: Request):
+    request.session.pop("admin_auth", None)
+    return {"ok": True}
+
+
+@app.get("/api/admin/me")
+def admin_me(request: Request):
+    return {"admin": request.session.get("admin_auth") is True}
+
+
 # ---------------------------------------------------------------------------
 # Services
 # ---------------------------------------------------------------------------
@@ -215,10 +250,10 @@ def get_services(db: Session = Depends(get_db)):
 
 
 @app.post("/api/services")
-def create_service(data: dict, db: Session = Depends(get_db)):
+def create_service(data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     svc = models.Service(
         category=data["category"], name=data["name"], description=data.get("description", ""),
-        avg_min_price=data["avgMinPrice"], avg_max_price=data["avgMaxPrice"],
+        avg_min_price=clamp_mvp_price(data["avgMinPrice"]), avg_max_price=clamp_mvp_price(data["avgMaxPrice"]),
         priority=data.get("priority", "P0"), icon_name=data.get("iconName", "wrench"),
         image_url=data.get("imageUrl"),
     )
@@ -229,7 +264,7 @@ def create_service(data: dict, db: Session = Depends(get_db)):
 
 
 @app.patch("/api/services/{service_id}")
-def update_service(service_id: int, data: dict, db: Session = Depends(get_db)):
+def update_service(service_id: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     svc = db.query(models.Service).filter(models.Service.id == service_id).first()
     if not svc:
         raise HTTPException(404, "Service not found")
@@ -237,9 +272,21 @@ def update_service(service_id: int, data: dict, db: Session = Depends(get_db)):
     for k, v in data.items():
         col = field_map.get(k, k)
         if hasattr(svc, col):
+            if col in {"avg_min_price", "avg_max_price"}:
+                v = clamp_mvp_price(v)
             setattr(svc, col, v)
     db.commit()
     db.refresh(svc)
+    return {"ok": True}
+
+
+@app.delete("/api/services/{service_id}")
+def delete_service(service_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    svc = db.query(models.Service).filter(models.Service.id == service_id).first()
+    if not svc:
+        raise HTTPException(404, "Service not found")
+    db.delete(svc)
+    db.commit()
     return {"ok": True}
 
 
@@ -247,11 +294,16 @@ def update_service(service_id: int, data: dict, db: Session = Depends(get_db)):
 # Craftsmen
 # ---------------------------------------------------------------------------
 @app.get("/api/craftsmen")
-def get_craftsmen(skill: Optional[str] = None, available: Optional[bool] = None, applicationStatus: Optional[str] = None, db: Session = Depends(get_db)):
+def get_craftsmen(request: Request, skill: Optional[str] = None, available: Optional[bool] = None, applicationStatus: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.Craftsman)
+    is_admin = request.session.get("admin_auth") is True
+    if not is_admin:
+        query = query.filter(models.Craftsman.application_status == "approved", models.Craftsman.is_verified == True)
     if available is not None:
         query = query.filter(models.Craftsman.is_available == available)
     if applicationStatus:
+        if not is_admin:
+            raise HTTPException(403, "Admin access required")
         query = query.filter(models.Craftsman.application_status == applicationStatus)
     results = query.all()
     if skill:
@@ -288,8 +340,35 @@ def apply_craftsman(data: dict, db: Session = Depends(get_db)):
     return c.to_dict()
 
 
+@app.post("/api/craftsmen")
+def create_craftsman(data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    phone = data.get("phone", "").replace(" ", "")
+    existing = db.query(models.Craftsman).filter(models.Craftsman.phone == phone).first()
+    if existing:
+        raise HTTPException(409, "A craftsman with this phone already exists")
+    c = models.Craftsman(
+        name=data["name"], phone=phone, photo_url=data.get("photoUrl"),
+        bio=data.get("bio"), experience=data.get("experience", 0),
+        application_status="approved", is_available=True, is_verified=True,
+    )
+    c.skills = data.get("skills", [])
+    c.service_areas = data.get("serviceAreas", data.get("service_areas", []))
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c.to_dict()
+
+
+@app.get("/api/craftsmen/{craftsman_id}")
+def get_craftsman(craftsman_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    c = db.query(models.Craftsman).filter(models.Craftsman.id == craftsman_id).first()
+    if not c:
+        raise HTTPException(404, "Craftsman not found")
+    return c.to_dict()
+
+
 @app.patch("/api/craftsmen/{craftsman_id}")
-def update_craftsman(craftsman_id: int, data: dict, db: Session = Depends(get_db)):
+def update_craftsman(craftsman_id: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     c = db.query(models.Craftsman).filter(models.Craftsman.id == craftsman_id).first()
     if not c:
         raise HTTPException(404, "Craftsman not found")
@@ -311,7 +390,9 @@ def update_craftsman(craftsman_id: int, data: dict, db: Session = Depends(get_db
 # Bookings
 # ---------------------------------------------------------------------------
 @app.get("/api/bookings")
-def get_bookings(phone: Optional[str] = None, db: Session = Depends(get_db)):
+def get_bookings(request: Request, phone: Optional[str] = None, db: Session = Depends(get_db)):
+    if not phone:
+        require_admin(request, db)
     query = db.query(models.Booking)
     if phone:
         query = query.filter(models.Booking.customer_phone == phone)
@@ -342,7 +423,7 @@ def create_booking(data: dict, db: Session = Depends(get_db)):
 
 
 @app.patch("/api/bookings/{booking_id}")
-def update_booking(booking_id: int, data: dict, db: Session = Depends(get_db)):
+def update_booking(booking_id: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     b = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not b:
         raise HTTPException(404, "Booking not found")
@@ -364,7 +445,7 @@ def update_booking(booking_id: int, data: dict, db: Session = Depends(get_db)):
 
 
 @app.post("/api/bookings/{booking_id}/cancel")
-def cancel_booking(booking_id: int, db: Session = Depends(get_db)):
+def cancel_booking(booking_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     b = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not b:
         raise HTTPException(404, "Booking not found")
@@ -376,7 +457,7 @@ def cancel_booking(booking_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/api/bookings/{booking_id}/complete")
-def complete_booking(booking_id: int, data: dict, db: Session = Depends(get_db)):
+def complete_booking(booking_id: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Mark a booking as completed (called by craftsman portal)."""
     b = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not b:
@@ -385,9 +466,9 @@ def complete_booking(booking_id: int, data: dict, db: Session = Depends(get_db))
     if data.get("completionNotes"):
         b.completion_notes = str(data["completionNotes"])[:500]
     if data.get("totalAmount"):
-        b.total_amount = int(data["totalAmount"])
-        b.platform_fee = max(49, int(b.total_amount * 0.05))
-        b.convenience_fee = 75
+        b.total_amount = max(100, min(200, int(data["totalAmount"])))
+        b.platform_fee = 0
+        b.convenience_fee = 0
     db.commit()
     logger.info(f"Booking #{b.id} completed. Amount: {b.total_amount}")
     return b.to_dict()
@@ -395,21 +476,11 @@ def complete_booking(booking_id: int, data: dict, db: Session = Depends(get_db))
 
 @app.post("/api/bookings/{booking_id}/pay")
 def pay_booking(booking_id: int, data: dict, db: Session = Depends(get_db)):
-    """Simulate payment processing."""
-    b = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
-    if not b:
-        raise HTTPException(404, "Booking not found")
-    if b.payment_status == "paid":
-        raise HTTPException(400, "Already paid")
-    b.payment_status = "paid"
-    b.payment_method = data.get("method", "upi")
-    db.commit()
-    logger.info(f"Booking #{b.id} paid via {b.payment_method}")
-    return {"ok": True, "paymentStatus": "paid"}
+    raise HTTPException(410, "Online payments are disabled for this MVP")
 
 
 @app.post("/api/bookings/{booking_id}/flag")
-def flag_booking(booking_id: int, data: dict, db: Session = Depends(get_db)):
+def flag_booking(booking_id: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Flag a booking for review."""
     b = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not b:
@@ -434,7 +505,7 @@ def get_testimonials(db: Session = Depends(get_db)):
 
 
 @app.post("/api/testimonials")
-def create_testimonial(data: dict, db: Session = Depends(get_db)):
+def create_testimonial(data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     t = models.Testimonial(
         name=data["name"], location=data.get("location", ""),
         text=data["text"], rating=int(data.get("rating", 5)),
@@ -447,7 +518,7 @@ def create_testimonial(data: dict, db: Session = Depends(get_db)):
 
 
 @app.patch("/api/testimonials/{tid}")
-def update_testimonial(tid: int, data: dict, db: Session = Depends(get_db)):
+def update_testimonial(tid: int, data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     t = db.query(models.Testimonial).filter(models.Testimonial.id == tid).first()
     if not t:
         raise HTTPException(404, "Testimonial not found")
@@ -463,7 +534,7 @@ def update_testimonial(tid: int, data: dict, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/testimonials/{tid}")
-def delete_testimonial(tid: int, db: Session = Depends(get_db)):
+def delete_testimonial(tid: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     t = db.query(models.Testimonial).filter(models.Testimonial.id == tid).first()
     if not t:
         raise HTTPException(404, "Testimonial not found")
@@ -481,7 +552,7 @@ def get_site_config(db: Session = Depends(get_db)):
 
 
 @app.patch("/api/site-config")
-def update_site_config(data: dict, db: Session = Depends(get_db)):
+def update_site_config(data: dict, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     for key, value in data.items():
         cfg = db.query(models.SiteConfig).filter(models.SiteConfig.key == key).first()
         if cfg:
@@ -496,7 +567,7 @@ def update_site_config(data: dict, db: Session = Depends(get_db)):
 # Notifications
 # ---------------------------------------------------------------------------
 @app.get("/api/notifications")
-def get_notifications(limit: int = 100, db: Session = Depends(get_db)):
+def get_notifications(limit: int = 100, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     ns = db.query(models.Notification).order_by(models.Notification.created_at.desc()).limit(limit).all()
     return [n.to_dict() for n in ns]
 
@@ -505,7 +576,7 @@ def get_notifications(limit: int = 100, db: Session = Depends(get_db)):
 # Admin Dashboard
 # ---------------------------------------------------------------------------
 @app.get("/api/admin/dashboard")
-def get_dashboard(db: Session = Depends(get_db)):
+def get_dashboard(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     total = db.query(func.count(models.Booking.id)).scalar() or 0
     pending = db.query(func.count(models.Booking.id)).filter(models.Booking.status == "pending").scalar() or 0
     completed = db.query(func.count(models.Booking.id)).filter(models.Booking.status == "completed").scalar() or 0
@@ -540,7 +611,7 @@ def get_dashboard(db: Session = Depends(get_db)):
 
 
 @app.get("/api/admin/revenue")
-def get_revenue_report(days: int = 14, db: Session = Depends(get_db)):
+def get_revenue_report(days: int = 14, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Daily revenue breakdown for the admin chart."""
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=days)
     bookings = db.query(models.Booking).filter(

@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import Nav from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
 import { useGetAdminDashboard, useListBookings, useListCraftsmen, useUpdateBooking, getListBookingsQueryKey, getGetAdminDashboardQueryKey } from "@/api";
@@ -24,7 +26,22 @@ export default function Admin() {
   const updateBooking = useUpdateBooking();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [selectedBooking, setSelectedBooking] = useState<typeof bookings extends (infer T)[] | undefined ? T : never | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [ratingBookingId, setRatingBookingId] = useState<number | null>(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [review, setReview] = useState("");
+
+  const handleRate = async () => {
+    if (!ratingBookingId || !rating) return;
+    try {
+      await updateBooking.mutateAsync({ id: ratingBookingId, data: { rating, review } });
+      queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
+      toast({ title: "Rating submitted" });
+      setRatingBookingId(null); setRating(0); setReview("");
+    } catch { toast({ title: "Failed to submit rating", variant: "destructive" }); }
+  };
 
   const handleAssign = async (bookingId: number, craftsmanId: number) => {
     const craftsman = craftsmen?.find((c) => c.id === craftsmanId);
@@ -200,19 +217,44 @@ export default function Admin() {
                     </td>
                     <td className="py-2.5 px-3 text-foreground">{b.serviceCategory}</td>
                     <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">{b.scheduledDate}</td>
-                    <td className="py-2.5 px-3 text-muted-foreground">{b.craftsmanName ?? "—"}</td>
-                    <td className="py-2.5 px-3"><StatusBadge status={b.status} /></td>
                     <td className="py-2.5 px-3">
-                      <Select value={b.status} onValueChange={(val) => handleStatusChange(b.id, val)}>
-                        <SelectTrigger className="w-32 h-7 text-xs">
-                          <SelectValue />
+                      <Select value={b.craftsmanId ? String(b.craftsmanId) : "unassigned"} onValueChange={(val) => val !== "unassigned" && handleAssign(b.id, Number(val))}>
+                        <SelectTrigger className="w-32 h-7 text-xs border-dashed">
+                          <SelectValue placeholder="Assign" />
                         </SelectTrigger>
                         <SelectContent>
-                          {STATUSES.map((s) => (
-                            <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
+                          <SelectItem value="unassigned" className="text-xs italic text-muted-foreground">Unassigned</SelectItem>
+                          {(craftsmen ?? []).map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)} className="text-xs">
+                              {c.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="py-2.5 px-3"><StatusBadge status={b.status} /></td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-2">
+                        <Select value={b.status} onValueChange={(val) => handleStatusChange(b.id, val)}>
+                          <SelectTrigger className="w-28 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUSES.map((s) => (
+                              <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {b.status === "completed" && !b.rating && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs px-2 border-[#D4C5B0]" onClick={() => { setRatingBookingId(b.id); setRating(0); setReview(""); }}>
+                            <Star className="w-3 h-3 mr-1" /> Rate
+                          </Button>
+                        )}
+                        {b.rating ? (
+                          <div className="flex items-center text-xs text-amber-500 font-medium border px-1.5 rounded bg-amber-50 h-7 shrink-0"><Star className="w-3 h-3 fill-current mr-0.5" />{b.rating}</div>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -224,6 +266,32 @@ export default function Admin() {
           </div>
         </Card>
       </div>
+
+      {/* Rating Dialog */}
+      <Dialog open={!!ratingBookingId} onOpenChange={(o) => !o && setRatingBookingId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Rate Craftsman / Job</DialogTitle></DialogHeader>
+          <div className="space-y-5 py-2">
+            <div>
+              <Label className="mb-3 block">Rating</Label>
+              <div className="flex gap-2 justify-center">
+                {[1,2,3,4,5].map((s) => (
+                  <button key={s} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(s)} className="transition-transform hover:scale-110">
+                    <Star className={`w-8 h-8 ${s <= (hoverRating || rating) ? "fill-amber-400 text-amber-400" : "text-muted"}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="mb-2 block">Review (optional)</Label>
+              <Textarea placeholder="Share experience..." value={review} onChange={(e) => setReview(e.target.value)} className="min-h-24 resize-none" />
+            </div>
+            <Button className="w-full" onClick={handleRate} disabled={!rating || updateBooking.isPending}>
+              {updateBooking.isPending ? "Submitting..." : "Submit Rating"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
