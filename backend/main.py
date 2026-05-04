@@ -49,11 +49,17 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # File uploads
 # ---------------------------------------------------------------------------
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+# Vercel and other serverless environments use a read-only filesystem, except for /tmp
+default_upload_dir = "/tmp/uploads" if os.getenv("VERCEL") or os.getenv("VERCEL_ENV") else "uploads"
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", default_upload_dir)
 MAX_UPLOAD_MB = 10
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+except OSError as e:
+    logger.warning(f"Failed to create or mount upload directory {UPLOAD_DIR}: {e}")
 
 
 # ---------------------------------------------------------------------------
