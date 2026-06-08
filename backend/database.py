@@ -2,32 +2,52 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# Vercel and other serverless environments use a read-only filesystem, except for /tmp
-is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_ENV")
-db_url = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+
+def _resolve_db_url() -> str:
+    # Prefer explicit DATABASE_URL, then Supabase non-pooling (direct connection),
+    # then Supabase pooler, then SQLite for local dev.
+    url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL_NON_POOLING")
+        or os.getenv("POSTGRES_URL")
+        or "sqlite:///./dev.db"
+    )
+    # SQLAlchemy requires "postgresql://" — Supabase/Heroku use the older "postgres://" scheme.
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    return url
+
+
+db_url = _resolve_db_url()
+is_vercel = bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
 
 if is_vercel and db_url.startswith("sqlite:///"):
     import shutil
-    # Get the local file path (e.g., ./dev.db)
     local_path = db_url.replace("sqlite:///", "")
     tmp_path = "/tmp/" + os.path.basename(local_path)
-    
-    # If the file exists in the deployment, copy it to /tmp to make it writable
     if os.path.exists(local_path) and not os.path.exists(tmp_path):
         try:
             shutil.copy2(local_path, tmp_path)
         except Exception:
             pass
-            
     db_url = f"sqlite:///{tmp_path}"
 
 SQLALCHEMY_DATABASE_URL = db_url
 
 connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
+
+if is_vercel and not SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    # Serverless functions don't persist between invocations; NullPool avoids
+    # exhausting Postgres connections across cold-start cycles.
+    from sqlalchemy.pool import NullPool
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, poolclass=NullPool)
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
 
 def init_db():
     """Create tables if they do not exist (required on Vercel where dev.db is not bundled)."""

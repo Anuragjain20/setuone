@@ -7,4 +7,5 @@ python-jose[cryptography]
 passlib[bcrypt]
 alembic
 itsdangerous
+psycopg2-binary
 pytest
