@@ -86,7 +86,7 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {step === "phone" && "Sign in to SetuOne"}
+            {step === "phone" && "Sign in to SnapFix"}
             {step === "otp" && "Enter OTP"}
             {step === "name" && "What's your name?"}
           </DialogTitle>

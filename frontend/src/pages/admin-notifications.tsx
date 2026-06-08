@@ -3,7 +3,7 @@ import { MessageSquare, Smartphone, RefreshCw, CheckCircle, Clock, AlertCircle }
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Nav from "@/components/nav";
+import AdminLayout from "@/components/admin-layout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useListCraftsmen } from "@/api";
 
@@ -66,13 +66,12 @@ export default function AdminNotifications() {
   }).length;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
-      <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+    <AdminLayout>
+    <div className="p-6 max-w-5xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Notifications & Applicants</h1>
-            <p className="text-muted-foreground">Track all outgoing messages and new craftsman applications.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-0.5">Notifications</h1>
+            <p className="text-sm text-muted-foreground">Track all outgoing messages and system events.</p>
           </div>
           <Button size="sm" variant="outline" onClick={() => qc.invalidateQueries({ queryKey: ["notifications"] })} className="gap-2">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -174,7 +173,7 @@ export default function AdminNotifications() {
           </div>
         </Card>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, Wrench, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, Wrench, ArrowRight, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,24 +8,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Nav from "@/components/nav";
 import { useToast } from "@/hooks/use-toast";
+import { CITIES } from "@/context/CityContext";
 
 const ALL_SKILLS = ["Plumbing", "Carpentry", "Electrical", "Painting", "AC Service", "Home Cleaning", "Pest Control", "CCTV/Security", "Welding", "Tiling", "Waterproofing", "Appliance Repair"];
-const ALL_AREAS = ["Vijay Nagar", "Palasia", "New Palasia", "Sukhliya", "Scheme 54", "Scheme 78", "AB Road", "LIG Colony", "Nipania", "Rajendra Nagar", "Annapurna", "Indore Central", "MG Road", "Sadar Bazar"];
 
 export default function Join() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", experience: "", bio: "", photoUrl: "",
+    city: "",
     skills: [] as string[], serviceAreas: [] as string[],
   });
   const { toast } = useToast();
 
+  const selectedCity = CITIES.find((c) => c.name === form.city) ?? null;
+  const availableAreas = selectedCity?.areas ?? [];
+
   const toggleSkill = (s: string) => setForm((p) => ({ ...p, skills: p.skills.includes(s) ? p.skills.filter((x) => x !== s) : [...p.skills, s] }));
   const toggleArea = (a: string) => setForm((p) => ({ ...p, serviceAreas: p.serviceAreas.includes(a) ? p.serviceAreas.filter((x) => x !== a) : [...p.serviceAreas, a] }));
+  const handleCityChange = (cityName: string) => {
+    setForm((p) => ({ ...p, city: cityName, serviceAreas: [] }));
+    setCityOpen(false);
+  };
 
   const submit = async () => {
-    if (!form.name || !form.phone || form.skills.length === 0 || form.serviceAreas.length === 0) {
+    if (!form.name || !form.phone || !form.city || form.skills.length === 0 || form.serviceAreas.length === 0) {
       toast({ title: "Please fill all required fields", variant: "destructive" }); return;
     }
     if (!/^\d{10}$/.test(form.phone.replace(/\s/g, ""))) {
@@ -39,7 +48,7 @@ export default function Join() {
         body: JSON.stringify({ ...form, phone: form.phone.replace(/\s/g, ""), experience: Number(form.experience) || 0 }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.detail ?? data.error ?? "Failed to submit");
       setSubmitted(true);
     } catch (e: any) {
       toast({ title: e.message ?? "Failed to submit application", variant: "destructive" });
@@ -57,7 +66,7 @@ export default function Join() {
             </div>
           </motion.div>
           <h1 className="text-2xl font-bold text-[#1A1209] mb-3">Application Submitted!</h1>
-          <p className="text-[#5C5043] mb-2">Thank you for applying to join SetuOne. Our team will review your application and contact you within 2–3 business days.</p>
+          <p className="text-[#5C5043] mb-2">Thank you for applying to join SnapFix. Our team will review your application and contact you within 2–3 business days.</p>
           <p className="text-sm text-[#8A7A68]">For any queries, WhatsApp us at +91 77777 77777</p>
         </div>
       </div>
@@ -73,8 +82,8 @@ export default function Join() {
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Wrench className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-[#1A1209] mb-3">Join SetuOne as a Karigar</h1>
-          <p className="text-[#5C5043] max-w-md mx-auto">Get regular work, guaranteed payments, and build your reputation in Indore. 50+ verified craftsmen already trust us.</p>
+          <h1 className="text-3xl font-bold text-[#1A1209] mb-3">Join SnapFix as a Pro</h1>
+          <p className="text-[#5C5043] max-w-md mx-auto">Get regular work, guaranteed payments, and build your reputation across India. 200+ verified professionals already trust us.</p>
           <div className="flex justify-center gap-6 mt-5">
             {[["₹0", "Joining fee"], ["30+", "Jobs/month avg"], ["24h", "Payment after job"]].map(([v, l]) => (
               <div key={l} className="text-center">
@@ -92,7 +101,7 @@ export default function Join() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Full Name <span className="text-red-500">*</span></Label>
-                <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Ramesh Sharma" />
+                <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Your full name" />
               </div>
               <div className="space-y-1.5">
                 <Label>Mobile Number <span className="text-red-500">*</span></Label>
@@ -113,12 +122,42 @@ export default function Join() {
             </div>
           </div>
 
+          {/* City */}
+          <div>
+            <Label className="mb-2 block">Your City <span className="text-red-500">*</span></Label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCityOpen(!cityOpen)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-md border border-input bg-background text-sm hover:bg-accent transition-colors"
+              >
+                <span className={form.city ? "text-foreground" : "text-muted-foreground"}>{form.city || "Select your city"}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${cityOpen ? "rotate-180" : ""}`} />
+              </button>
+              {cityOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-[#EDE8E0] bg-white shadow-lg z-10 py-1 max-h-60 overflow-y-auto">
+                  {CITIES.map((c) => (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      onClick={() => handleCityChange(c.name)}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F5F1EB] transition-colors flex items-center justify-between ${form.city === c.name ? "text-primary font-semibold" : "text-[#1A1209]"}`}
+                    >
+                      <span>{c.name}</span>
+                      <span className="text-xs text-[#8A7A68]">{c.state}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Skills */}
           <div>
             <Label className="mb-3 block">Skills / Services you offer <span className="text-red-500">*</span></Label>
             <div className="flex flex-wrap gap-2">
               {ALL_SKILLS.map((s) => (
-                <button key={s} onClick={() => toggleSkill(s)}
+                <button key={s} type="button" onClick={() => toggleSkill(s)}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-all ${form.skills.includes(s) ? "bg-primary text-white border-primary" : "border-[#D4C5B0] text-[#5C5043] hover:border-primary hover:text-primary"}`}>
                   {s}
                 </button>
@@ -128,15 +167,21 @@ export default function Join() {
 
           {/* Service Areas */}
           <div>
-            <Label className="mb-3 block">Areas you cover in Indore <span className="text-red-500">*</span></Label>
-            <div className="flex flex-wrap gap-2">
-              {ALL_AREAS.map((a) => (
-                <button key={a} onClick={() => toggleArea(a)}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-all ${form.serviceAreas.includes(a) ? "bg-primary text-white border-primary" : "border-[#D4C5B0] text-[#5C5043] hover:border-primary hover:text-primary"}`}>
-                  {a}
-                </button>
-              ))}
-            </div>
+            <Label className="mb-2 block">
+              Areas you cover{form.city ? ` in ${form.city}` : ""} <span className="text-red-500">*</span>
+            </Label>
+            {!form.city ? (
+              <p className="text-sm text-muted-foreground">Select your city above to see available areas.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {availableAreas.map((a) => (
+                  <button key={a} type="button" onClick={() => toggleArea(a)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${form.serviceAreas.includes(a) ? "bg-primary text-white border-primary" : "border-[#D4C5B0] text-[#5C5043] hover:border-primary hover:text-primary"}`}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Benefits */}
@@ -160,4 +205,3 @@ export default function Join() {
     </div>
   );
 }
-

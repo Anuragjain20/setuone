@@ -11,26 +11,17 @@ export default function Nav() {
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-[#EDE8E0] shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#1A1209] select-none">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#1A1209] select-none shrink-0">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white text-xs font-black">SO</span>
+              <span className="text-white text-xs font-black">SF</span>
             </div>
-            SetuOne
+            SnapFix
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
-            <NavLink href="/" label="Services" current={location} />
+          <div className="hidden md:flex items-center gap-1 ml-auto">
+            <NavLink href="/" label="Home" current={location} />
             <NavLink href="/book" label="Book a Service" current={location} />
-
-            {isAdmin && (
-              <div className="flex items-center gap-1 ml-4 border-l pl-4 border-[#EDE8E0]">
-                <NavLink href="/admin" label="Dashboard" current={location} />
-                <NavLink href="/admin/craftsmen" label="Craftsmen" current={location} />
-                <NavLink href="/admin/content" label="Site Content" current={location} />
-                <NavLink href="/admin/notifications" label="Notifications" current={location} />
-              </div>
-            )}
 
             <Link href="/book">
               <Button size="sm" className="ml-4 bg-primary text-white hover:bg-primary/90 rounded-lg">Book Now</Button>
@@ -46,15 +37,6 @@ export default function Nav() {
           <div className="md:hidden border-t border-[#EDE8E0] bg-white px-4 pb-4 pt-2 flex flex-col gap-1">
             <MobileNavLink href="/" label="Home" onClick={() => setOpen(false)} />
             <MobileNavLink href="/book" label="Book a Service" onClick={() => setOpen(false)} />
-            {isAdmin && (
-              <>
-                <div className="my-2 border-t border-[#EDE8E0]" />
-                <MobileNavLink href="/admin" label="Admin Dashboard" onClick={() => setOpen(false)} />
-                <MobileNavLink href="/admin/craftsmen" label="Manage Craftsmen" onClick={() => setOpen(false)} />
-                <MobileNavLink href="/admin/content" label="Site Content" onClick={() => setOpen(false)} />
-                <MobileNavLink href="/admin/notifications" label="Notifications" onClick={() => setOpen(false)} />
-              </>
-            )}
           </div>
         )}
       </nav>

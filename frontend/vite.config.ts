@@ -5,7 +5,7 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiUrl = env.VITE_API_URL || "https://setuone-gamma.vercel.app";
+  const apiUrl = env.VITE_API_URL || "https://snapfix-api.vercel.app";
 
   return {
     plugins: [

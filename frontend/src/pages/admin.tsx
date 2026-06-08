@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { TrendingUp, Users, Briefcase, CheckCircle, Clock, AlertCircle, Star, IndianRupee } from "lucide-react";
+import { TrendingUp, Users, Briefcase, CheckCircle, Clock, AlertCircle, Star, IndianRupee, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Nav from "@/components/nav";
-import { StatusBadge } from "@/components/status-badge";
+import AdminLayout from "@/components/admin-layout";
 import { useGetAdminDashboard, useListBookings, useListCraftsmen, useUpdateBooking, getListBookingsQueryKey, getGetAdminDashboardQueryKey } from "@/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useGetRevenueReport } from "@/api";
-
-const STATUSES = ["pending", "confirmed", "in_progress", "completed", "cancelled"] as const;
 
 export default function Admin() {
   const { data: dashboard } = useGetAdminDashboard();
@@ -26,7 +24,6 @@ export default function Admin() {
   const updateBooking = useUpdateBooking();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [ratingBookingId, setRatingBookingId] = useState<number | null>(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -55,40 +52,27 @@ export default function Admin() {
     }
   };
 
-  const handleStatusChange = async (bookingId: number, status: string) => {
-    try {
-      await updateBooking.mutateAsync({ id: bookingId, data: { status: status as "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" } });
-      queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
-      toast({ title: "Status updated" });
-    } catch {
-      toast({ title: "Failed to update", variant: "destructive" });
-    }
-  };
-
   const metricCards = [
     { label: "Total Bookings", value: dashboard?.totalBookings ?? 0, icon: Briefcase, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Pending", value: dashboard?.pendingBookings ?? 0, icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50" },
+    { label: "Pending Dispatch", value: dashboard?.pendingBookings ?? 0, icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50" },
     { label: "Completed", value: dashboard?.completedBookings ?? 0, icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
     { label: "Active", value: dashboard?.activeBookings ?? 0, icon: AlertCircle, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "GMV This Month", value: `₹${((dashboard?.gmvThisMonth ?? 0) / 100000).toFixed(1)}L`, icon: IndianRupee, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Revenue This Month", value: `₹${((dashboard?.revenueThisMonth ?? 0)).toLocaleString("en-IN")}`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Total Craftsmen", value: `${dashboard?.availableCraftsmen ?? 0} / ${dashboard?.totalCraftsmen ?? 0}`, icon: Users, color: "text-purple-600", bg: "bg-purple-50", sub: "available" },
+    { label: "GMV", value: `₹${((dashboard?.gmvThisMonth ?? 0) / 1000).toFixed(1)}k`, icon: IndianRupee, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Revenue", value: `₹${((dashboard?.revenueThisMonth ?? 0)).toLocaleString("en-IN")}`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Craftsmen", value: `${dashboard?.availableCraftsmen ?? 0} / ${dashboard?.totalCraftsmen ?? 0}`, icon: Users, color: "text-purple-600", bg: "bg-purple-50", sub: "available" },
     { label: "Avg Rating", value: `${(dashboard?.avgRating ?? 0).toFixed(1)} / 5`, icon: Star, color: "text-yellow-600", bg: "bg-yellow-50" },
   ];
 
   const pendingBookings = bookings?.filter((b) => b.status === "pending") ?? [];
-  const recentBookings = [...(bookings ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20);
   const availableCraftsmen = craftsmen?.filter((c) => c.isAvailable) ?? [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Nav />
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+    <AdminLayout>
+    <div className="p-6 max-w-6xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage bookings, dispatch craftsmen, and monitor platform health.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-0.5">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Platform overview and pending dispatch.</p>
           </div>
           <Badge className="bg-green-100 text-green-700 border-green-200 font-medium">Live</Badge>
         </div>
@@ -183,7 +167,7 @@ export default function Admin() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setSelectedBooking(b as any)}>View</Button>
+                    <Link href="/admin/bookings"><Button size="sm" variant="outline" className="h-8 text-xs">View All</Button></Link>
                   </div>
                 </div>
               ))}
@@ -191,80 +175,27 @@ export default function Admin() {
           </Card>
         )}
 
-        {/* All Bookings */}
-        <Card className="p-5">
-          <h2 className="font-semibold text-foreground mb-4">All Bookings</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">#</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Customer</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Service</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Date</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Craftsman</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Status</th>
-                  <th className="text-left py-2 px-3 text-xs text-muted-foreground font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentBookings.map((b) => (
-                  <tr key={b.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="py-2.5 px-3 text-muted-foreground">{b.id}</td>
-                    <td className="py-2.5 px-3">
-                      <div className="font-medium text-foreground">{b.customerName}</div>
-                      <div className="text-xs text-muted-foreground">{b.customerPhone}</div>
-                    </td>
-                    <td className="py-2.5 px-3 text-foreground">{b.serviceCategory}</td>
-                    <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">{b.scheduledDate}</td>
-                    <td className="py-2.5 px-3">
-                      <Select value={b.craftsmanId ? String(b.craftsmanId) : "unassigned"} onValueChange={(val) => val !== "unassigned" && handleAssign(b.id, Number(val))}>
-                        <SelectTrigger className="w-32 h-7 text-xs border-dashed">
-                          <SelectValue placeholder="Assign" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unassigned" className="text-xs italic text-muted-foreground">Unassigned</SelectItem>
-                          {(craftsmen ?? []).map((c) => (
-                            <SelectItem key={c.id} value={String(c.id)} className="text-xs">
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="py-2.5 px-3"><StatusBadge status={b.status} /></td>
-                    <td className="py-2.5 px-3">
-                      <div className="flex gap-2">
-                        <Select value={b.status} onValueChange={(val) => handleStatusChange(b.id, val)}>
-                          <SelectTrigger className="w-28 h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUSES.map((s) => (
-                              <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {b.status === "completed" && !b.rating && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs px-2 border-[#D4C5B0]" onClick={() => { setRatingBookingId(b.id); setRating(0); setReview(""); }}>
-                            <Star className="w-3 h-3 mr-1" /> Rate
-                          </Button>
-                        )}
-                        {b.rating ? (
-                          <div className="flex items-center text-xs text-amber-500 font-medium border px-1.5 rounded bg-amber-50 h-7 shrink-0"><Star className="w-3 h-3 fill-current mr-0.5" />{b.rating}</div>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {recentBookings.length === 0 && (
-                  <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">No bookings yet</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        {/* Quick links */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          {[
+            { href: "/admin/bookings", label: "All Bookings", desc: `${(bookings ?? []).length} total bookings`, icon: "📋" },
+            { href: "/admin/analytics", label: "Analytics", desc: "City & service breakdown", icon: "📊" },
+            { href: "/admin/customers", label: "Customers", desc: "View customer database", icon: "👥" },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Card className="p-4 hover:shadow-md transition-all cursor-pointer group hover:border-primary/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xl mb-1">{item.icon}</div>
+                    <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">{item.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Rating Dialog */}
@@ -292,7 +223,7 @@ export default function Admin() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

@@ -18,9 +18,9 @@ import models
 from database import get_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("setuone")
+logger = logging.getLogger("snapfix")
 
-app = FastAPI(title="SetuOne API")
+app = FastAPI(title="SnapFix API")
 
 # ---------------------------------------------------------------------------
 # Middleware
@@ -75,7 +75,7 @@ BOOKING_SAFE_FIELDS = {
     "payment_status", "payment_method",
 }
 CRAFTSMAN_SAFE_FIELDS = {
-    "name", "phone", "photo_url", "rating", "total_jobs",
+    "name", "phone", "photo_url", "city", "rating", "total_jobs",
     "is_verified", "is_available", "experience", "bio", "application_status",
 }
 
@@ -151,7 +151,7 @@ def request_otp(data: dict, db: Session = Depends(get_db)):
     else:
         user = models.User(phone=phone, last_otp=otp, otp_expires_at=expires)
         db.add(user)
-    notification = models.Notification(user_phone=phone, title="OTP", message=f"Your SetuOne OTP is {otp}", type="info")
+    notification = models.Notification(user_phone=phone, title="OTP", message=f"Your SnapFix OTP is {otp}", type="info")
     db.add(notification)
     db.commit()
     logger.info(f"OTP requested for {phone[:4]}****")
@@ -299,14 +299,32 @@ def delete_service(service_id: int, db: Session = Depends(get_db), _admin=Depend
 # ---------------------------------------------------------------------------
 # Craftsmen
 # ---------------------------------------------------------------------------
+@app.get("/api/cities")
+def get_cities():
+    return [
+        {"slug": "indore", "name": "Indore", "state": "Madhya Pradesh"},
+        {"slug": "bhopal", "name": "Bhopal", "state": "Madhya Pradesh"},
+        {"slug": "jaipur", "name": "Jaipur", "state": "Rajasthan"},
+        {"slug": "lucknow", "name": "Lucknow", "state": "Uttar Pradesh"},
+        {"slug": "nagpur", "name": "Nagpur", "state": "Maharashtra"},
+        {"slug": "mumbai", "name": "Mumbai", "state": "Maharashtra"},
+        {"slug": "pune", "name": "Pune", "state": "Maharashtra"},
+        {"slug": "delhi", "name": "Delhi", "state": "Delhi"},
+        {"slug": "bangalore", "name": "Bangalore", "state": "Karnataka"},
+        {"slug": "hyderabad", "name": "Hyderabad", "state": "Telangana"},
+    ]
+
+
 @app.get("/api/craftsmen")
-def get_craftsmen(request: Request, skill: Optional[str] = None, available: Optional[bool] = None, applicationStatus: Optional[str] = None, db: Session = Depends(get_db)):
+def get_craftsmen(request: Request, skill: Optional[str] = None, available: Optional[bool] = None, city: Optional[str] = None, applicationStatus: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.Craftsman)
     is_admin = request.session.get("admin_auth") is True
     if not is_admin:
         query = query.filter(models.Craftsman.application_status == "approved", models.Craftsman.is_verified == True)
     if available is not None:
         query = query.filter(models.Craftsman.is_available == available)
+    if city:
+        query = query.filter(models.Craftsman.city == city)
     if applicationStatus:
         if not is_admin:
             raise HTTPException(403, "Admin access required")
@@ -335,6 +353,7 @@ def apply_craftsman(data: dict, db: Session = Depends(get_db)):
     c = models.Craftsman(
         name=data["name"], phone=phone, photo_url=data.get("photoUrl"),
         bio=data.get("bio"), experience=data.get("experience", 0),
+        city=data.get("city"),
         application_status="pending", is_available=False, is_verified=False,
     )
     c.skills = data.get("skills", [])
@@ -355,6 +374,7 @@ def create_craftsman(data: dict, db: Session = Depends(get_db), _admin=Depends(r
     c = models.Craftsman(
         name=data["name"], phone=phone, photo_url=data.get("photoUrl"),
         bio=data.get("bio"), experience=data.get("experience", 0),
+        city=data.get("city"),
         application_status="approved", is_available=True, is_verified=True,
     )
     c.skills = data.get("skills", [])
@@ -382,7 +402,7 @@ def update_craftsman(craftsman_id: int, data: dict, db: Session = Depends(get_db
         c.skills = data.pop("skills")
     if "serviceAreas" in data or "service_areas" in data:
         c.service_areas = data.pop("serviceAreas", data.pop("service_areas", []))
-    camel_map = {"photoUrl": "photo_url", "isVerified": "is_verified", "isAvailable": "is_available", "applicationStatus": "application_status", "totalJobs": "total_jobs"}
+    camel_map = {"photoUrl": "photo_url", "isVerified": "is_verified", "isAvailable": "is_available", "applicationStatus": "application_status", "totalJobs": "total_jobs", "city": "city"}
     for k, v in data.items():
         col = camel_map.get(k, k)
         if col in CRAFTSMAN_SAFE_FIELDS:
@@ -390,6 +410,16 @@ def update_craftsman(craftsman_id: int, data: dict, db: Session = Depends(get_db
     db.commit()
     db.refresh(c)
     return c.to_dict()
+
+
+@app.delete("/api/craftsmen/{craftsman_id}")
+def delete_craftsman(craftsman_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    c = db.query(models.Craftsman).filter(models.Craftsman.id == craftsman_id).first()
+    if not c:
+        raise HTTPException(404, "Craftsman not found")
+    db.delete(c)
+    db.commit()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------
@@ -418,6 +448,7 @@ def create_booking(data: dict, db: Session = Depends(get_db)):
     b = models.Booking(
         customer_name=data["customerName"], customer_phone=data["customerPhone"],
         service_category=data["serviceCategory"], service_name=data.get("serviceName", data["serviceCategory"]),
+        city=data.get("city"),
         address=data["address"], scheduled_date=data["scheduledDate"],
         time_slot=data["timeSlot"], description=data["description"],
     )
@@ -598,10 +629,10 @@ def get_dashboard(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     total_c = db.query(func.count(models.Craftsman.id)).scalar() or 0
     verified_c = db.query(func.count(models.Craftsman.id)).filter(models.Craftsman.is_verified == True).scalar() or 0
     available_c = db.query(func.count(models.Craftsman.id)).filter(models.Craftsman.is_available == True).scalar() or 0
+    pending_apps = db.query(func.count(models.Craftsman.id)).filter(models.Craftsman.application_status == "pending").scalar() or 0
 
     avg_rating = db.query(func.avg(models.Booking.rating)).filter(models.Booking.rating.isnot(None)).scalar()
 
-    # Bookings by category
     cats = db.query(models.Booking.service_category, func.count(models.Booking.id)).group_by(models.Booking.service_category).all()
     by_cat = [{"category": c[0], "count": c[1]} for c in cats]
 
@@ -609,11 +640,64 @@ def get_dashboard(db: Session = Depends(get_db), _admin=Depends(require_admin)):
         "totalBookings": total, "pendingBookings": pending,
         "completedBookings": completed, "activeBookings": active,
         "totalCraftsmen": total_c, "verifiedCraftsmen": verified_c,
-        "availableCraftsmen": available_c,
+        "availableCraftsmen": available_c, "pendingApplications": pending_apps,
         "gmvThisMonth": gmv, "revenueThisMonth": revenue,
         "avgRating": round(avg_rating, 1) if avg_rating else 0.0,
         "bookingsByCategory": by_cat,
     }
+
+
+@app.get("/api/admin/customers")
+def get_customers(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """All customers derived from booking records, cross-referenced with registered users."""
+    bookings = db.query(models.Booking).order_by(models.Booking.created_at.desc()).all()
+    customer_map: dict = {}
+    for b in bookings:
+        phone = b.customer_phone
+        if phone not in customer_map:
+            customer_map[phone] = {
+                "phone": phone, "name": b.customer_name, "city": b.city,
+                "totalBookings": 0, "completedBookings": 0, "totalSpent": 0,
+                "lastBookingDate": None, "isRegistered": False,
+            }
+        entry = customer_map[phone]
+        entry["totalBookings"] += 1
+        if b.status == "completed":
+            entry["completedBookings"] += 1
+            entry["totalSpent"] += b.total_amount or 0
+        if entry["lastBookingDate"] is None:
+            entry["lastBookingDate"] = b.created_at.isoformat() if b.created_at else None
+    registered_phones = {u.phone for u in db.query(models.User.phone).all()}
+    for phone, entry in customer_map.items():
+        entry["isRegistered"] = phone in registered_phones
+    return sorted(customer_map.values(), key=lambda x: x["totalBookings"], reverse=True)
+
+
+@app.get("/api/admin/city-stats")
+def get_city_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Per-city breakdown: bookings, craftsmen, GMV."""
+    booking_rows = db.query(models.Booking.city, func.count(models.Booking.id)).group_by(models.Booking.city).all()
+    craftsmen_rows = db.query(models.Craftsman.city, func.count(models.Craftsman.id)).group_by(models.Craftsman.city).all()
+    gmv_rows = db.query(
+        models.Booking.city,
+        func.coalesce(func.sum(models.Booking.total_amount), 0),
+    ).filter(models.Booking.status == "completed").group_by(models.Booking.city).all()
+
+    city_map: dict = {}
+    for city, count in booking_rows:
+        name = city or "Unknown"
+        city_map.setdefault(name, {"city": name, "bookings": 0, "craftsmen": 0, "gmv": 0})
+        city_map[name]["bookings"] = count
+    for city, count in craftsmen_rows:
+        name = city or "Unknown"
+        city_map.setdefault(name, {"city": name, "bookings": 0, "craftsmen": 0, "gmv": 0})
+        city_map[name]["craftsmen"] = count
+    for city, gmv in gmv_rows:
+        name = city or "Unknown"
+        city_map.setdefault(name, {"city": name, "bookings": 0, "craftsmen": 0, "gmv": 0})
+        city_map[name]["gmv"] = int(gmv)
+
+    return sorted(city_map.values(), key=lambda x: x["bookings"], reverse=True)
 
 
 @app.get("/api/admin/revenue")

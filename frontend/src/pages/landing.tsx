@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, Phone, CheckCircle, MessageCircle, Shield, Zap, Clock, BadgeCheck } from "lucide-react";
+import { Star, ArrowRight, Phone, CheckCircle, MessageCircle, Shield, Zap, Clock, BadgeCheck, MapPin, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Nav from "@/components/nav";
 import { useListServices, useListCraftsmen } from "@/api";
 import { useQuery } from "@tanstack/react-query";
+import { useCity, CITIES } from "@/context/CityContext";
+import { useLocation } from "wouter";
 
 const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.09 } } };
@@ -70,8 +73,10 @@ function ServiceCard({ service }: { service: any }) {
 }
 
 export default function Landing() {
+  const { city, setCity } = useCity();
+  const [, navigate] = useLocation();
   const { data: services } = useListServices();
-  const { data: craftsmen } = useListCraftsmen();
+  const { data: craftsmen } = useListCraftsmen({ city: city?.name });
   const { data: config } = useQuery<Record<string, string>>({
     queryKey: ["site-config"],
     queryFn: () => fetch("/api/site-config").then((r) => r.json()),
@@ -87,6 +92,7 @@ export default function Landing() {
   const topCraftsmen = (craftsmen ?? []).filter((c) => c.isVerified).slice(0, 3);
   const activeTestimonials = (testimonials ?? []).filter((t) => t.isActive);
   const heroPhoto = cfg("hero_craftsman_photo", "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&q=80");
+  const cityName = city?.name ?? "your city";
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] font-sans">
@@ -98,16 +104,13 @@ export default function Landing() {
           {/* Left */}
           <motion.div initial="hidden" animate="show" variants={stagger}>
             <motion.p variants={fadeUp} className="text-sm font-semibold text-primary uppercase tracking-widest mb-4">
-              {cfg("company_city", "Indore")} · Home Services
+              {city ? `${city.name} · ` : ""}Home Services
             </motion.p>
             <motion.h1 variants={fadeUp} className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1A1209] leading-[1.1] mb-5">
-              {(() => {
-                const headline = cfg("hero_headline", "The trusted hand for every home in Indore.");
-                const city = cfg("company_city", "Indore");
-                const idx = headline.indexOf(city);
-                if (idx === -1) return <>{headline}</>;
-                return <>{headline.slice(0, idx)}<span className="text-primary">{city}</span>{headline.slice(idx + city.length)}</>;
-              })()}
+              {city
+                ? <>The fastest way to fix your home in <span className="text-primary">{city.name}</span>.</>
+                : <>{cfg("hero_headline", "The fastest way to fix your home.")}</>
+              }
             </motion.h1>
             <motion.p variants={fadeUp} className="text-base text-[#5C5043] leading-relaxed mb-8 max-w-md">
               {cfg("hero_subheadline", "Verified plumbers, electricians, carpenters & more — dispatched to your door in hours. Fair prices, real reviews, a no-drain guarantee.")}
@@ -233,7 +236,10 @@ export default function Landing() {
               <motion.div variants={fadeUp} className="mb-10">
                 <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Our Professionals</p>
                 <h2 className="text-3xl md:text-4xl font-bold text-[#1A1209] max-w-md leading-tight">
-                  {cfg("craftsmen_section_title", "Real people. Real skill. Right here in Indore.")}
+                  {city
+                    ? `Real pros. Verified skills. Right here in ${city.name}.`
+                    : cfg("craftsmen_section_title", "Real pros. Verified skills. At your door.")
+                  }
                 </h2>
               </motion.div>
               <div className="grid md:grid-cols-3 gap-6">
@@ -284,7 +290,7 @@ export default function Landing() {
               <motion.div variants={fadeUp} className="mb-10">
                 <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Customer Stories</p>
                 <h2 className="text-3xl md:text-4xl font-bold text-[#1A1209]">
-                  {cfg("testimonials_section_title", "Trusted by 1,000+ households across Indore.")}
+                  {cfg("testimonials_section_title", "Trusted by 5,000+ households across India.")}
                 </h2>
               </motion.div>
               <div className="grid md:grid-cols-3 gap-5">
@@ -412,7 +418,7 @@ export default function Landing() {
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
                 <Link href="/book">
                   <Button size="lg" className="bg-primary text-white h-12 px-7 rounded-xl font-semibold shadow-lg shadow-primary/25 hover:bg-primary/90">
-                    Request a Karigar <ArrowRight className="ml-2 w-4 h-4" />
+                    Book a Pro <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
                 <a href={`tel:${cfg("company_phone", "+91 93998 58706").replace(/\s/g, "")}`}>
@@ -445,6 +451,49 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── CITIES ── */}
+      <section className="py-16 bg-white border-t border-[#EDE8E0]">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
+            <motion.div variants={fadeUp} className="mb-8">
+              <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">We're Expanding</p>
+              <h2 className="text-3xl font-bold text-[#1A1209]">Now serving 10 cities across India.</h2>
+              <p className="text-[#5C5043] mt-2 text-sm">Pick your city for local pros and faster service.</p>
+            </motion.div>
+            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {CITIES.map((c) => (
+                <motion.button
+                  key={c.slug}
+                  variants={fadeUp}
+                  onClick={() => { setCity(c); navigate(`/city/${c.slug}`); }}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 hover:shadow-md ${city?.slug === c.slug ? "border-primary bg-primary/5 text-primary" : "border-[#EDE8E0] bg-[#FAF8F4] text-[#1A1209] hover:border-primary/40 hover:bg-white"}`}
+                >
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span>{c.name}</span>
+                </motion.button>
+              ))}
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section className="py-16 bg-[#FAF8F4] border-t border-[#EDE8E0]">
+        <div className="max-w-3xl mx-auto px-4">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}>
+            <motion.div variants={fadeUp} className="mb-8 text-center">
+              <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Got Questions?</p>
+              <h2 className="text-3xl font-bold text-[#1A1209]">Frequently asked questions</h2>
+            </motion.div>
+            <motion.div variants={stagger} className="space-y-2">
+              {FAQ_ITEMS.map((item) => (
+                <FAQItem key={item.q} q={item.q} a={item.a} />
+              ))}
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
       <footer className="bg-[#2C1F0E] text-[#C4B49A] py-12">
         <div className="max-w-6xl mx-auto px-4">
@@ -453,12 +502,12 @@ export default function Landing() {
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 font-bold text-xl text-white mb-3">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-white text-xs font-black">SO</span>
+                  <span className="text-white text-xs font-black">SF</span>
                 </div>
-                {cfg("company_name", "SetuOne")}
+                {cfg("company_name", "SnapFix")}
               </div>
-              <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Bharosemand Karigar, Ek Call Par")} · {cfg("company_city", "Indore")}</p>
-              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 93998 58706")}</p>
+              <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Book a Fix in a Snap")}</p>
+              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 77777 77777")}</p>
             </div>
             {/* Services */}
             <div>
@@ -466,10 +515,18 @@ export default function Landing() {
               <div className="space-y-2 text-sm">
                 <Link href="/book" className="block hover:text-white transition-colors">Book a Service</Link>
                 <Link href="/bookings" className="block hover:text-white transition-colors">My Bookings</Link>
-
+                <Link href="/join" className="block hover:text-white transition-colors">Join as a Pro</Link>
               </div>
             </div>
-
+            {/* Cities */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Cities</p>
+              <div className="space-y-2 text-sm">
+                {CITIES.slice(0, 5).map((c) => (
+                  <Link key={c.slug} href={`/city/${c.slug}`} className="block hover:text-white transition-colors">{c.name}</Link>
+                ))}
+              </div>
+            </div>
             {/* Legal */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#7A6A58] mb-3">Legal</p>
@@ -481,11 +538,69 @@ export default function Landing() {
             </div>
           </div>
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#7A6A58]">
-            <p>© {new Date().getFullYear()} {cfg("company_name", "SetuOne")}. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {cfg("company_name", "SnapFix")}. All rights reserved.</p>
+            <p>Serving 10 cities across India.</p>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+const FAQ_ITEMS = [
+  {
+    q: "How does SnapFix work?",
+    a: "Three steps: pick a service and share your address and preferred time → we match you with a nearby verified pro → they visit your home, complete the work, and you pay cash only when you're satisfied.",
+  },
+  {
+    q: "Are your professionals verified?",
+    a: "Yes. Every SnapFix professional goes through identity verification, a skill assessment, and reference checks before going live. We also track ratings from every completed job.",
+  },
+  {
+    q: "How much do home services cost?",
+    a: "Visit charges start at ₹100–₹200. The final cost depends on the scope of work and you'll get a clear estimate before anything starts. No hidden fees — ever.",
+  },
+  {
+    q: "How quickly can I get help?",
+    a: "Most bookings are confirmed within 30 minutes. Same-day visits are available in all our cities. Urgent issues like active leaks or electrical faults are prioritised.",
+  },
+  {
+    q: "Which cities do you serve?",
+    a: "We're live in 10 cities: Indore, Bhopal, Jaipur, Lucknow, Nagpur, Mumbai, Pune, Delhi, Bangalore, and Hyderabad — with more launching soon.",
+  },
+  {
+    q: "How do I pay?",
+    a: "Cash on completion, paid directly to the professional after the job is done. No upfront charges, no platform fee.",
+  },
+  {
+    q: "What if I'm not satisfied?",
+    a: "Contact us immediately and we'll send the professional back at no charge — or dispatch a replacement. You never pay for work you're not happy with.",
+  },
+  {
+    q: "How do I become a SnapFix professional?",
+    a: "Go to snapfix.pro/join and submit your details. Our team reviews applications and verified pros start receiving job requests within a few days.",
+  },
+];
+
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
+      className="border border-[#EDE8E0] rounded-xl bg-white overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-[#1A1209] hover:bg-[#FAF8F4] transition-colors"
+        aria-expanded={open}
+      >
+        <span>{q}</span>
+        <ChevronDown className={`w-4 h-4 text-[#8A7A68] shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="px-5 pb-4 text-sm text-[#5C5043] leading-relaxed border-t border-[#EDE8E0] pt-3">
+          {a}
+        </div>
+      )}
+    </motion.div>
   );
 }
 

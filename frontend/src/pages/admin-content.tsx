@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import Nav from "@/components/nav";
+import AdminLayout from "@/components/admin-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useListServices } from "@/api";
@@ -75,13 +75,12 @@ export default function AdminContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
-      <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+    <AdminLayout>
+    <div className="p-6 max-w-5xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Site Content</h1>
-            <p className="text-muted-foreground">Configure everything displayed on the public landing page.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-0.5">Site Content</h1>
+            <p className="text-sm text-muted-foreground">Configure everything displayed on the public landing page.</p>
           </div>
           <Badge className="bg-blue-100 text-blue-700 border-blue-200">CMS</Badge>
         </div>
@@ -105,7 +104,7 @@ export default function AdminContent() {
         {tab === "Testimonials" && <TestimonialsTab testimonials={testimonials} toast={toast} qc={qc} />}
         {tab === "Pricing" && <PricingTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 
@@ -128,16 +127,16 @@ function SaveBtn({ loading, onClick }: { loading: boolean; onClick: () => void }
 }
 
 function CompanyTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u: Config) => void; loading: boolean }) {
-  const [name, setName] = useState(cfg("company_name") || "SetuOne");
-  const [tagline, setTagline] = useState(cfg("company_tagline") || "Bharosemand Karigar, Ek Call Par");
+  const [name, setName] = useState(cfg("company_name") || "SnapFix");
+  const [tagline, setTagline] = useState(cfg("company_tagline") || "Book a Fix in a Snap");
   const [phone, setPhone] = useState(cfg("company_phone") || "+91 93998 58706");
   const [whatsapp, setWhatsapp] = useState(cfg("company_whatsapp") || "919399858706");
   const [city, setCity] = useState(cfg("company_city") || "Indore");
 
   // re-sync when config loads
   useState(() => {
-    setName(cfg("company_name") || "SetuOne");
-    setTagline(cfg("company_tagline") || "Bharosemand Karigar, Ek Call Par");
+    setName(cfg("company_name") || "SnapFix");
+    setTagline(cfg("company_tagline") || "Book a Fix in a Snap");
   });
 
   return (
@@ -148,8 +147,8 @@ function CompanyTab({ cfg, save, loading }: { cfg: (k: string) => string; save: 
           <h2 className="font-semibold">Company Info</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-5">
-          <Field label="Company Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="SetuOne" /></Field>
-          <Field label="City"><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Indore" /></Field>
+          <Field label="Company Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="SnapFix" /></Field>
+          <Field label="Primary City (legacy)"><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Indore" /></Field>
           <Field label="Tagline (Hindi/English)"><Input value={tagline} onChange={(e) => setTagline(e.target.value)} /></Field>
           <Field label="Display Phone"><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 93998 58706" /></Field>
           <Field label="WhatsApp Number (digits only, with country code)"><Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="919399858706" /></Field>
@@ -163,7 +162,7 @@ function CompanyTab({ cfg, save, loading }: { cfg: (k: string) => string; save: 
 }
 
 function HeroTab({ cfg, save, loading }: { cfg: (k: string) => string; save: (u: Config) => void; loading: boolean }) {
-  const [headline, setHeadline] = useState(cfg("hero_headline") || "The trusted hand for every home in Indore.");
+  const [headline, setHeadline] = useState(cfg("hero_headline") || "The fastest way to fix your home.");
   const [sub, setSub] = useState(cfg("hero_subheadline") || "");
   const [photo, setPhoto] = useState(cfg("hero_craftsman_photo") || "");
   const [craftsmanName, setCraftsmanName] = useState(cfg("hero_craftsman_name") || "");

@@ -35,6 +35,7 @@ class Craftsman(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     photo_url = Column(String)
+    city = Column(String)
     _skills = Column("skills", Text, nullable=False, default="[]")
     _service_areas = Column("service_areas", Text, nullable=False, default="[]")
     rating = Column(Float, default=0.0, nullable=False)
@@ -75,6 +76,7 @@ class Craftsman(Base):
             "name": self.name,
             "phone": self.phone,
             "photoUrl": self.photo_url,
+            "city": self.city,
             "skills": self.skills,
             "serviceAreas": self.service_areas,
             "rating": self.rating,
@@ -95,6 +97,7 @@ class Booking(Base):
     customer_phone = Column(String, nullable=False)
     service_category = Column(String, nullable=False)
     service_name = Column(String, nullable=False)
+    city = Column(String)
     address = Column(String, nullable=False)
     scheduled_date = Column(String, nullable=False)
     time_slot = Column(String, nullable=False)
@@ -123,6 +126,7 @@ class Booking(Base):
             "customerPhone": self.customer_phone,
             "serviceCategory": self.service_category,
             "serviceName": self.service_name,
+            "city": self.city,
             "address": self.address,
             "scheduledDate": self.scheduled_date,
             "timeSlot": self.time_slot,

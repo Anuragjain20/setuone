@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Plus, Star, CheckCircle, AlertCircle, Phone, Briefcase } from "lucide-react";
+import { Plus, Star, CheckCircle, AlertCircle, Phone, Briefcase, Trash2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,20 +8,52 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import Nav from "@/components/nav";
+import AdminLayout from "@/components/admin-layout";
 import { useListCraftsmen, useCreateCraftsman, useUpdateCraftsman, getListCraftsmenQueryKey } from "@/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { CITIES } from "@/context/CityContext";
+
+function useDeleteCraftsman() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => fetch(`/api/craftsmen/${id}`, { method: "DELETE", credentials: "include" }).then((r) => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: getListCraftsmenQueryKey() }),
+  });
+}
+
+function useMutation<T>({ mutationFn, onSuccess }: { mutationFn: (arg: T) => Promise<any>; onSuccess?: () => void }) {
+  const [isPending, setIsPending] = useState(false);
+  const mutate = async (arg: T) => {
+    setIsPending(true);
+    try {
+      const result = await mutationFn(arg);
+      onSuccess?.();
+      return result;
+    } finally {
+      setIsPending(false);
+    }
+  };
+  return { mutate, mutateAsync: mutate, isPending };
+}
 
 export default function AdminCraftsmen() {
   const { data: craftsmen, isLoading } = useListCraftsmen();
   const createCraftsman = useCreateCraftsman();
   const updateCraftsman = useUpdateCraftsman();
+  const deleteCraftsman = useDeleteCraftsman();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", skills: "", serviceAreas: "", experience: "", bio: "" });
+  const [cityFilter, setCityFilter] = useState("all");
+  const [form, setForm] = useState({ name: "", phone: "", city: "", skills: "", serviceAreas: "", experience: "", bio: "" });
+
+  const filtered = useMemo(() => {
+    if (cityFilter === "all") return craftsmen ?? [];
+    return (craftsmen ?? []).filter((c) => c.city === cityFilter);
+  }, [craftsmen, cityFilter]);
 
   const handleAdd = async () => {
     try {
@@ -29,6 +61,7 @@ export default function AdminCraftsmen() {
         data: {
           name: form.name,
           phone: form.phone,
+          city: form.city || undefined,
           skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
           serviceAreas: form.serviceAreas.split(",").map((s) => s.trim()).filter(Boolean),
           experience: Number(form.experience) || 0,
@@ -38,9 +71,19 @@ export default function AdminCraftsmen() {
       queryClient.invalidateQueries({ queryKey: getListCraftsmenQueryKey() });
       toast({ title: "Craftsman Added", description: `${form.name} has been added to the registry.` });
       setShowAdd(false);
-      setForm({ name: "", phone: "", skills: "", serviceAreas: "", experience: "", bio: "" });
+      setForm({ name: "", phone: "", city: "", skills: "", serviceAreas: "", experience: "", bio: "" });
     } catch {
       toast({ title: "Failed to add craftsman", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Remove ${name} from the registry? This cannot be undone.`)) return;
+    try {
+      await deleteCraftsman.mutateAsync(id);
+      toast({ title: "Craftsman removed" });
+    } catch {
+      toast({ title: "Failed to remove", variant: "destructive" });
     }
   };
 
@@ -65,33 +108,46 @@ export default function AdminCraftsmen() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-start justify-between">
+    <AdminLayout>
+    <div className="p-6 max-w-5xl mx-auto">
+        <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Craftsmen Registry</h1>
-            <p className="text-muted-foreground">Manage and verify your professional workforce.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-0.5">Craftsmen Registry</h1>
+            <p className="text-sm text-muted-foreground">
+              {filtered.length} of {craftsmen?.length ?? 0} craftsmen
+            </p>
           </div>
           <Button onClick={() => setShowAdd(true)}>
             <Plus className="w-4 h-4 mr-2" /> Add Craftsman
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <Card className="p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{craftsmen?.length ?? 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">Total Craftsmen</p>
-          </Card>
-          <Card className="p-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{craftsmen?.filter((c) => c.isVerified).length ?? 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">Verified</p>
-          </Card>
-          <Card className="p-4 text-center">
-            <p className="text-2xl font-bold text-blue-600">{craftsmen?.filter((c) => c.isAvailable).length ?? 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">Available Now</p>
-          </Card>
+        {/* Stats + city filter */}
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 flex-1">
+            <Card className="p-3 text-center">
+              <p className="text-xl font-bold text-foreground">{craftsmen?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Total</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-xl font-bold text-green-600">{craftsmen?.filter((c) => c.isVerified).length ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Verified</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-xl font-bold text-blue-600">{craftsmen?.filter((c) => c.isAvailable).length ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Available</p>
+            </Card>
+          </div>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger className="w-36 h-9">
+              <MapPin className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="All Cities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Cities</SelectItem>
+              {CITIES.map((c) => <SelectItem key={c.slug} value={c.name}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading && (
@@ -111,7 +167,7 @@ export default function AdminCraftsmen() {
         )}
 
         <div className="grid md:grid-cols-2 gap-4">
-          {(craftsmen ?? []).map((c, idx) => (
+          {filtered.map((c, idx) => (
             <motion.div
               key={c.id}
               initial={{ opacity: 0, y: 12 }}
@@ -168,28 +224,40 @@ export default function AdminCraftsmen() {
                     />
                     <span className="text-xs text-muted-foreground">{c.isAvailable ? "Available" : "Unavailable"}</span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant={c.isVerified ? "outline" : "default"}
-                    className="h-7 text-xs"
-                    onClick={() => handleToggleVerified(c.id, c.isVerified)}
-                  >
-                    {c.isVerified ? (
-                      <><AlertCircle className="w-3 h-3 mr-1" /> Remove Verify</>
-                    ) : (
-                      <><CheckCircle className="w-3 h-3 mr-1" /> Verify</>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant={c.isVerified ? "outline" : "default"}
+                      className="h-7 text-xs"
+                      onClick={() => handleToggleVerified(c.id, c.isVerified)}
+                    >
+                      {c.isVerified ? (
+                        <><AlertCircle className="w-3 h-3 mr-1" /> Unverify</>
+                      ) : (
+                        <><CheckCircle className="w-3 h-3 mr-1" /> Verify</>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                      onClick={() => handleDelete(c.id, c.name)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </motion.div>
           ))}
         </div>
 
-        {craftsmen?.length === 0 && !isLoading && (
+        {filtered.length === 0 && !isLoading && (
           <Card className="p-12 text-center">
             <div className="text-4xl mb-4">👷</div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">No craftsmen yet</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              {cityFilter !== "all" ? `No craftsmen in ${cityFilter}` : "No craftsmen yet"}
+            </h2>
             <p className="text-muted-foreground mb-6">Add your first craftsman to get started.</p>
             <Button onClick={() => setShowAdd(true)}><Plus className="w-4 h-4 mr-2" /> Add Craftsman</Button>
           </Card>
@@ -212,6 +280,15 @@ export default function AdminCraftsmen() {
                 <Label className="mb-1.5 block text-xs">Phone *</Label>
                 <Input placeholder="9876543210" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} type="tel" />
               </div>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-xs">City</Label>
+              <Select value={form.city} onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger>
+                <SelectContent>
+                  {CITIES.map((c) => <SelectItem key={c.slug} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="mb-1.5 block text-xs">Skills * (comma-separated)</Label>
@@ -239,7 +316,7 @@ export default function AdminCraftsmen() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

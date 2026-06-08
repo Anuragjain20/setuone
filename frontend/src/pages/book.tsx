@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import Nav from "@/components/nav";
 import { useListServices, useCreateBooking } from "@/api";
 import { useToast } from "@/hooks/use-toast";
+import { useCity } from "@/context/CityContext";
 
 const SERVICE_ICONS: Record<string, string> = {
   wrench: "🔧", zap: "⚡", paint: "🖌️", hammer: "🔨", wind: "❄️", sparkles: "✨", bug: "🛡️", camera: "📷"
@@ -51,6 +52,7 @@ const fadeSlide = {
 export default function Book() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { city } = useCity();
   const { data: services } = useListServices();
   const createBooking = useCreateBooking();
   const [step, setStep] = useState(1);
@@ -84,6 +86,7 @@ export default function Book() {
           customerPhone: form.customerPhone,
           serviceCategory: form.serviceCategory,
           serviceName: form.serviceName || form.serviceCategory,
+          city: city?.name,
           address: form.address,
           scheduledDate: form.scheduledDate,
           timeSlot: form.timeSlot as "morning" | "afternoon" | "evening",
@@ -154,12 +157,14 @@ export default function Book() {
             {step === 2 && (
               <div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Where is the job?</h1>
-                <p className="text-muted-foreground mb-6">Enter your complete address in Indore.</p>
+                <p className="text-muted-foreground mb-6">
+                  Enter your complete address{city ? ` in ${city.name}` : ""}.
+                </p>
                 <div className="space-y-4">
                   <div>
                     <Label className="mb-2 block">Full Address</Label>
                     <Textarea
-                      placeholder="e.g. 42, Sukhliya Colony, Vijay Nagar, Indore — 452010"
+                      placeholder={city ? `e.g. 42, Main Colony, ${city.areas?.[0] ?? "your area"}, ${city.name}` : "e.g. 42, Main Colony, your area, city — pincode"}
                       value={form.address}
                       onChange={(e) => update("address", e.target.value)}
                       className="min-h-28 resize-none"
@@ -171,7 +176,10 @@ export default function Book() {
                       <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-foreground">Coverage Area</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">We currently serve all major areas in Indore: Vijay Nagar, Palasia, Scheme 54, Sukhliya, AB Road, and more.</p>
+                        {city
+                          ? <p className="text-xs text-muted-foreground mt-0.5">We serve all major areas in {city.name}: {city.areas.slice(0, 5).join(", ")}, and more.</p>
+                          : <p className="text-xs text-muted-foreground mt-0.5">We serve 10 major cities across India. Select your city in the top navigation bar.</p>
+                        }
                       </div>
                     </div>
                   </Card>

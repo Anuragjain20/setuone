@@ -100,7 +100,7 @@ export default function CraftsmanPortal() {
         {error && (
           <Card className="p-8 text-center border-red-200 bg-red-50">
             <p className="text-red-700 font-medium">{(error as Error).message}</p>
-            <p className="text-sm text-red-500 mt-1">Make sure your number is registered with SetuOne admin.</p>
+            <p className="text-sm text-red-500 mt-1">Make sure your number is registered with SnapFix admin.</p>
           </Card>
         )}
 
