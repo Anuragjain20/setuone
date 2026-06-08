@@ -78,8 +78,8 @@ export default function AdminContent() {
     try {
       await updateConfig.mutateAsync(updates);
       toast({ title: "Saved successfully" });
-    } catch {
-      toast({ title: "Save failed", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Save failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     }
   };
 

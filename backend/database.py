@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+import logging
+
+logger = logging.getLogger("snapfix.db")
 
 
 def _resolve_db_url() -> str:
@@ -33,6 +36,10 @@ if is_vercel and db_url.startswith("sqlite:///"):
     db_url = f"sqlite:///{tmp_path}"
 
 SQLALCHEMY_DATABASE_URL = db_url
+
+# Log which database is in use so Vercel Function Logs confirm the right backend
+_safe_url = SQLALCHEMY_DATABASE_URL.split("@")[-1] if "@" in SQLALCHEMY_DATABASE_URL else SQLALCHEMY_DATABASE_URL
+logger.info("Database: %s", _safe_url)
 
 connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 
