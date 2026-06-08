@@ -4,6 +4,7 @@ import datetime
 import uuid
 import logging
 import secrets
+from contextlib import asynccontextmanager
 from typing import Optional
 from collections import defaultdict
 
@@ -20,7 +21,19 @@ from database import get_db
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("snapfix")
 
-app = FastAPI(title="SnapFix API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from seed import seed
+        seed()
+        logger.info("Startup seed completed")
+    except Exception as e:
+        logger.warning(f"Startup seed skipped: {e}")
+    yield
+
+
+app = FastAPI(title="SnapFix API", lifespan=lifespan)
 
 # ---------------------------------------------------------------------------
 # Middleware
