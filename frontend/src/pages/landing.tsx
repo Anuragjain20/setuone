@@ -80,7 +80,6 @@ export default function Landing() {
   const { data: config } = useQuery<Record<string, string>>({
     queryKey: ["site-config"],
     queryFn: () => fetch("/api/site-config").then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
   });
   const { data: testimonials } = useQuery<any[]>({
     queryKey: ["testimonials"],

@@ -57,14 +57,14 @@ function useTestimonials() {
 
 export default function AdminContent() {
   const [tab, setTab] = useState<Tab>("Company");
-  const { data: config = {} } = useSiteConfig();
+  const { data: config, isLoading: configLoading } = useSiteConfig();
   const { data: testimonials = [] } = useTestimonials();
   const { data: services = [] } = useListServices();
   const updateConfig = useUpdateConfig();
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const cfg = (key: string) => config[key] ?? "";
+  const cfg = (key: string) => config?.[key] ?? "";
   const save = async (updates: Config) => {
     try {
       await updateConfig.mutateAsync(updates);
@@ -98,11 +98,18 @@ export default function AdminContent() {
           ))}
         </div>
 
-        {tab === "Company" && <CompanyTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
-        {tab === "Hero" && <HeroTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
-        {tab === "Services" && <ServicesTab services={services as any} toast={toast} qc={qc} />}
-        {tab === "Testimonials" && <TestimonialsTab testimonials={testimonials} toast={toast} qc={qc} />}
-        {tab === "Pricing" && <PricingTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
+        {/* Gate tab content on config being loaded so useState inits pick up real DB values */}
+        {configLoading ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading content settings…</div>
+        ) : (
+          <>
+            {tab === "Company" && <CompanyTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
+            {tab === "Hero" && <HeroTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
+            {tab === "Services" && <ServicesTab services={services as any} toast={toast} qc={qc} />}
+            {tab === "Testimonials" && <TestimonialsTab testimonials={testimonials} toast={toast} qc={qc} />}
+            {tab === "Pricing" && <PricingTab cfg={cfg} save={save} loading={updateConfig.isPending} />}
+          </>
+        )}
       </div>
     </AdminLayout>
   );
