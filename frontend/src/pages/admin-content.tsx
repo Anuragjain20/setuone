@@ -43,7 +43,16 @@ function useSiteConfig() {
 function useUpdateConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Config) => fetch("/api/site-config", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    mutationFn: (data: Config) =>
+      fetch("/api/site-config", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((r) => {
+        if (!r.ok) throw new Error(`Save failed (${r.status})`);
+        return r.json();
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["site-config"] }),
   });
 }
@@ -258,7 +267,7 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
     const url = editing[id];
     if (url === undefined) return;
     try {
-      const res = await fetch(`/api/services/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imageUrl: url }) });
+      const res = await fetch(`/api/services/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imageUrl: url }) });
       if (!res.ok) throw new Error();
       qc.invalidateQueries({ queryKey: ["services"] });
       toast({ title: "Image updated" });
@@ -270,7 +279,7 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
   const removeService = async (id: number) => {
     if (!confirm("Delete this service?")) return;
     try {
-      await fetch(`/api/services/${id}`, { method: "DELETE" });
+      await fetch(`/api/services/${id}`, { method: "DELETE", credentials: "include" });
       qc.invalidateQueries({ queryKey: ["services"] });
       toast({ title: "Deleted" });
     } catch {
@@ -281,7 +290,7 @@ function ServicesTab({ services, toast, qc }: { services: any[]; toast: any; qc:
   const createService = async () => {
     if (!newSvc.category || !newSvc.name) { toast({ title: "Category and Name required", variant: "destructive" }); return; }
     try {
-      const res = await fetch("/api/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSvc) });
+      const res = await fetch("/api/services", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSvc) });
       if (!res.ok) throw new Error();
       qc.invalidateQueries({ queryKey: ["services"] });
       setAdding(false);
@@ -360,13 +369,14 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
   const [newT, setNewT] = useState({ name: "", location: "", text: "", rating: 5, avatarUrl: "" });
 
   const toggleActive = async (t: Testimonial) => {
-    await fetch(`/api/testimonials/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !t.isActive }) });
+    const res = await fetch(`/api/testimonials/${t.id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !t.isActive }) });
+    if (!res.ok) { toast({ title: "Failed to update testimonial", variant: "destructive" }); return; }
     qc.invalidateQueries({ queryKey: ["testimonials"] });
   };
 
   const remove = async (id: number) => {
     if (!confirm("Delete this testimonial?")) return;
-    await fetch(`/api/testimonials/${id}`, { method: "DELETE" });
+    await fetch(`/api/testimonials/${id}`, { method: "DELETE", credentials: "include" });
     qc.invalidateQueries({ queryKey: ["testimonials"] });
     toast({ title: "Deleted" });
   };
@@ -374,7 +384,7 @@ function TestimonialsTab({ testimonials, toast, qc }: { testimonials: Testimonia
   const create = async () => {
     if (!newT.name || !newT.location || !newT.text) { toast({ title: "Name, location and review are required", variant: "destructive" }); return; }
     try {
-      const res = await fetch("/api/testimonials", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newT, avatarUrl: newT.avatarUrl || null }) });
+      const res = await fetch("/api/testimonials", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newT, avatarUrl: newT.avatarUrl || null }) });
       if (!res.ok) throw new Error();
       qc.invalidateQueries({ queryKey: ["testimonials"] });
       setAdding(false);
