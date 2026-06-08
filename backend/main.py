@@ -16,7 +16,7 @@ from sqlalchemy import func
 from starlette.middleware.sessions import SessionMiddleware
 
 import models
-from database import get_db
+from database import get_db, init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("snapfix")
@@ -25,11 +25,13 @@ logger = logging.getLogger("snapfix")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
+        init_db()
         from seed import seed
         seed()
-        logger.info("Startup seed completed")
+        logger.info("Database initialized and seeded")
     except Exception as e:
-        logger.warning(f"Startup seed skipped: {e}")
+        logger.exception("Database initialization failed: %s", e)
+        raise
     yield
 
 
