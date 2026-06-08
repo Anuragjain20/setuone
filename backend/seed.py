@@ -75,41 +75,34 @@ DEMO_TESTIMONIALS = [
 def seed():
     db = SessionLocal()
     try:
-        # Services
-        existing = db.query(models.Service).count()
-        if existing == 0:
+        # Services — only seed if the table is empty
+        if db.query(models.Service).count() == 0:
             for s in SERVICES:
                 db.add(models.Service(**s))
             print(f"[OK] Seeded {len(SERVICES)} services")
         else:
-            for svc in db.query(models.Service).all():
-                svc.avg_min_price = 100
-                svc.avg_max_price = 200
-            print(f"[OK] Updated {existing} existing services to the INR 100-200 MVP price band")
+            print("[SKIP] Services already exist, skipping")
 
-        # Site Config
-        existing_cfg = db.query(models.SiteConfig).count()
-        if existing_cfg == 0:
-            for k, v in SITE_CONFIG.items():
+        # Site Config — only insert keys that don't exist yet; never overwrite
+        # admin-edited values so that changes made in the admin panel persist.
+        added = 0
+        for k, v in SITE_CONFIG.items():
+            if not db.query(models.SiteConfig).filter(models.SiteConfig.key == k).first():
                 db.add(models.SiteConfig(key=k, value=v))
-            print(f"[OK] Seeded {len(SITE_CONFIG)} site config keys")
+                added += 1
+        # Remove legacy key no longer used
+        old_city = db.query(models.SiteConfig).filter(models.SiteConfig.key == "company_city").first()
+        if old_city:
+            db.delete(old_city)
+        if added:
+            print(f"[OK] Site config: inserted {added} missing keys")
         else:
-            for key in ("company_name", "company_tagline", "pricing_amc_standard_price", "pricing_amc_premium_price", "hero_headline", "hero_subheadline", "craftsmen_section_title", "testimonials_section_title"):
-                cfg = db.query(models.SiteConfig).filter(models.SiteConfig.key == key).first()
-                if cfg:
-                    cfg.value = SITE_CONFIG[key]
-                else:
-                    db.add(models.SiteConfig(key=key, value=SITE_CONFIG[key]))
-            # Remove legacy company_city key (now handled per-request)
-            old_city = db.query(models.SiteConfig).filter(models.SiteConfig.key == "company_city").first()
-            if old_city:
-                db.delete(old_city)
-            print(f"[OK] Site config refreshed for SnapFix rebrand")
+            print("[SKIP] Site config already complete, skipping")
 
-        # Demo Craftsmen
-        existing_c = db.query(models.Craftsman).count()
-        if existing_c == 0:
+        # Demo Craftsmen — only seed if the table is empty
+        if db.query(models.Craftsman).count() == 0:
             for data in DEMO_CRAFTSMEN:
+                data = dict(data)
                 skills = data.pop("skills")
                 areas = data.pop("service_areas")
                 c = models.Craftsman(**data)
@@ -118,18 +111,15 @@ def seed():
                 db.add(c)
             print(f"[OK] Seeded {len(DEMO_CRAFTSMEN)} demo craftsmen across multiple cities")
         else:
-            print(f"[SKIP] Craftsmen already exist ({existing_c}), skipping")
+            print(f"[SKIP] Craftsmen already exist, skipping")
 
-        # Demo Testimonials
-        existing_t = db.query(models.Testimonial).count()
-        if existing_t == 0:
+        # Demo Testimonials — only seed if the table is empty
+        if db.query(models.Testimonial).count() == 0:
             for t in DEMO_TESTIMONIALS:
                 db.add(models.Testimonial(**t))
             print(f"[OK] Seeded {len(DEMO_TESTIMONIALS)} testimonials")
         else:
-            for testimonial in db.query(models.Testimonial).all():
-                testimonial.text = testimonial.text.replace("SetuOne", "SnapFix").replace("SevaSetu", "SnapFix")
-            print(f"[SKIP] Testimonials already exist ({existing_t}), rebranded text")
+            print("[SKIP] Testimonials already exist, skipping")
 
         db.commit()
         print("\n[DONE] Database seeded successfully!")
