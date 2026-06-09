@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Nav from "@/components/nav";
-import { useListServices, useCreateBooking } from "@/api";
+import { useListServices, useCreateBooking, getListBookingsQueryKey } from "@/api";
 import { useToast } from "@/hooks/use-toast";
 import { useCity } from "@/context/CityContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SERVICE_ICONS: Record<string, string> = {
   wrench: "🔧", zap: "⚡", paint: "🖌️", hammer: "🔨", wind: "❄️", sparkles: "✨", bug: "🛡️", camera: "📷"
@@ -54,6 +55,7 @@ export default function Book() {
   const { toast } = useToast();
   const { city } = useCity();
   const { data: services } = useListServices();
+  const queryClient = useQueryClient();
   const createBooking = useCreateBooking();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>({
@@ -93,6 +95,7 @@ export default function Book() {
           description: form.description,
         },
       });
+      queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
       toast({ title: "Booking Submitted!", description: "We'll confirm your booking within 30 minutes via WhatsApp." });
       navigate("/");
     } catch {

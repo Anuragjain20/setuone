@@ -16,16 +16,39 @@ from sqlalchemy import func
 from starlette.middleware.sessions import SessionMiddleware
 
 import models
-from database import get_db, init_db
+from database import get_db, init_db, SQLALCHEMY_DATABASE_URL
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("snapfix")
 
 
+def _run_migrations():
+    """Run Alembic migrations to bring the schema to head.
+
+    Works for both a brand-new DB (creates all tables via migrations) and an
+    existing DB with a stale schema (applies only the pending migrations, e.g.
+    adding the `city` column).  Falls back to create_all if Alembic fails so
+    local SQLite dev still works even without a migration history table.
+    """
+    try:
+        from alembic import command
+        from alembic.config import Config as AlembicConfig
+        cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini")
+        alembic_cfg = AlembicConfig(cfg_path)
+        # Override the URL in alembic.ini with the already-resolved DB URL so
+        # Alembic uses the same connection as the app (Postgres or SQLite).
+        alembic_cfg.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Alembic migrations applied (head)")
+    except Exception as exc:
+        logger.warning("Alembic migration failed, falling back to create_all: %s", exc)
+        init_db()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        init_db()
+        _run_migrations()
         from seed import seed
         seed()
         logger.info("Database initialized and seeded")
