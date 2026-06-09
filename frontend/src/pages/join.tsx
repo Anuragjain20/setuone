@@ -67,7 +67,7 @@ export default function Join() {
           </motion.div>
           <h1 className="text-2xl font-bold text-[#1A1209] mb-3">Application Submitted!</h1>
           <p className="text-[#5C5043] mb-2">Thank you for applying to join SnapFix. Our team will review your application and contact you within 2–3 business days.</p>
-          <p className="text-sm text-[#8A7A68]">For any queries, WhatsApp us at +91 77777 77777</p>
+          <p className="text-sm text-[#8A7A68]">For any queries, WhatsApp us at +91 93998 58706</p>
         </div>
       </div>
     );

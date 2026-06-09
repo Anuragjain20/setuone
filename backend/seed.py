@@ -24,8 +24,8 @@ SERVICES = [
 SITE_CONFIG = {
     "company_name": "SnapFix",
     "company_tagline": "Book a Fix in a Snap",
-    "company_phone": "+91 77777 77777",
-    "company_whatsapp": "917777777777",
+    "company_phone": "+91 93998 58706",
+    "company_whatsapp": "919399858706",
     "hero_headline": "The fastest way to fix your home.",
     "hero_subheadline": "Verified plumbers, electricians, carpenters & more — dispatched to your door in hours. Fair prices, real reviews, a satisfaction guarantee.",
     "hero_craftsman_name": "Ramesh Sharma",

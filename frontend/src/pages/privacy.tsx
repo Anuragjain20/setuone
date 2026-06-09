@@ -47,7 +47,7 @@ export default function Privacy() {
         <p>We use session cookies to maintain your login state. No tracking cookies or advertising cookies are used.</p>
 
         <h2>8. Contact</h2>
-        <p>Data Protection Officer: <strong>dpo@snapfix.in</strong> · +91 77777 77777 · India</p>
+        <p>Data Protection Officer: <strong>dpo@snapfix.in</strong> · +91 93998 58706 · India</p>
       </div>
     </div>
   );

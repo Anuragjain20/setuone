@@ -6,6 +6,6 @@ __pycache__/
 env/
 venv/
 ENV/
-sql_app.db
+*.db
 uploads/
 *.log

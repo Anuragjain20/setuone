@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import Nav from "@/components/nav";
 import { useListCraftsmen, useListServices } from "@/api";
 import { useCity, CITIES } from "@/context/CityContext";
+import { useQuery } from "@tanstack/react-query";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.45 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -32,38 +33,45 @@ export default function CityLanding() {
   const cityData = CITIES.find((c) => c.slug === slug);
   const { data: craftsmen } = useListCraftsmen({ city: cityData?.name });
   const { data: services } = useListServices();
+  const { data: siteConfig } = useQuery<Record<string, string>>({
+    queryKey: ["site-config"],
+    queryFn: () => fetch("/api/site-config").then((r) => r.json()),
+  });
+  const whatsapp = siteConfig?.["company_whatsapp"] ?? "919399858706";
 
   useEffect(() => {
-    if (cityData && city?.slug !== cityData.slug) {
-      setCity(cityData);
-    }
-    if (cityData) {
-      document.title = `Home Services in ${cityData.name} | SnapFix — Verified Plumbers, Electricians & More`;
+    if (cityData && city?.slug !== cityData.slug) setCity(cityData);
+    if (!cityData) return;
 
-      // Update meta description
-      let metaDesc = document.querySelector("meta[name='description']");
-      if (!metaDesc) {
-        metaDesc = document.createElement("meta");
-        metaDesc.setAttribute("name", "description");
-        document.head.appendChild(metaDesc);
-      }
-      metaDesc.setAttribute("content", `Book verified plumbers, electricians, carpenters, and home service professionals in ${cityData.name}, ${cityData.state}. Same-day visits. Pay cash on completion. Starting ₹100.`);
+    const title = `Plumber, Electrician & Home Services in ${cityData.name} | SnapFix`;
+    const description = `Book verified plumbers, electricians, carpenters, AC repair & home cleaning in ${cityData.name}, ${cityData.state}. Same-day visits. Pay cash on completion. Starts ₹100.`;
+    const url = `https://snapfix.pro/city/${cityData.slug}`;
 
-      // Update canonical URL
-      let canonical = document.querySelector("link[rel='canonical']");
-      if (!canonical) {
-        canonical = document.createElement("link");
-        canonical.setAttribute("rel", "canonical");
-        document.head.appendChild(canonical);
-      }
-      canonical.setAttribute("href", `https://snapfix.pro/city/${cityData.slug}`);
-    }
+    document.title = title;
+
+    const setMeta = (sel: string, attr: string, value: string) => {
+      let el = document.querySelector(sel);
+      if (!el) { el = document.createElement(sel.startsWith("link") ? "link" : "meta"); document.head.appendChild(el); }
+      el.setAttribute(attr, value);
+    };
+
+    setMeta("meta[name='description']",          "content", description);
+    setMeta("link[rel='canonical']",              "href",    url);
+    setMeta("meta[property='og:title']",          "content", title);
+    setMeta("meta[property='og:description']",    "content", description);
+    setMeta("meta[property='og:url']",            "content", url);
+    setMeta("meta[name='twitter:title']",         "content", title);
+    setMeta("meta[name='twitter:description']",   "content", description);
+
     return () => {
-      // Restore default canonical and title on unmount
-      const canonical = document.querySelector("link[rel='canonical']");
-      if (canonical) canonical.setAttribute("href", "https://snapfix.pro/");
-      const metaDesc = document.querySelector("meta[name='description']");
-      if (metaDesc) metaDesc.setAttribute("content", "SnapFix connects you with verified home service professionals across India — plumbers, electricians, carpenters, painters and more. Book in 2 minutes. Confirmed within 30 minutes.");
+      document.title = "SnapFix — Book a Home Service in a Snap";
+      setMeta("meta[name='description']",          "content", "SnapFix connects you with verified home service professionals across India — plumbers, electricians, carpenters, painters and more. Book in 2 minutes. Confirmed within 30 minutes.");
+      setMeta("link[rel='canonical']",             "href",    "https://snapfix.pro/");
+      setMeta("meta[property='og:title']",         "content", "SnapFix — Book a Fix in a Snap");
+      setMeta("meta[property='og:description']",   "content", "Verified home service professionals across India. Dispatched to your door in hours.");
+      setMeta("meta[property='og:url']",           "content", "https://snapfix.pro/");
+      setMeta("meta[name='twitter:title']",        "content", "SnapFix — Book a Home Service in a Snap");
+      setMeta("meta[name='twitter:description']",  "content", "Verified plumbers, electricians, carpenters & more across India. Book in 2 minutes.");
     };
   }, [slug, cityData]);
 
@@ -105,7 +113,7 @@ export default function CityLanding() {
                 Book in {cityData.name} <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <a href="https://wa.me/917777777777" target="_blank" rel="noopener noreferrer">
+            <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">
               <Button size="lg" variant="outline" className="border-[#D4C5B0] text-[#1A1209] h-12 px-7 rounded-xl font-semibold hover:bg-[#F0EBE1]">
                 <Phone className="mr-2 w-4 h-4" /> WhatsApp Us
               </Button>

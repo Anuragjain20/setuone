@@ -36,7 +36,7 @@ export default function Refund() {
         <h2>6. How to Request a Refund</h2>
         <ol>
           <li>Use the "Report Issue" button on your booking card</li>
-          <li>Or WhatsApp us at +91 77777 77777 with your booking number</li>
+          <li>Or WhatsApp us at +91 93998 58706 with your booking number</li>
           <li>Our team will respond within 24 hours</li>
         </ol>
 
@@ -44,7 +44,7 @@ export default function Refund() {
         <p>Refunds are processed to the original payment method — UPI, card, or bank transfer. Cash payments are refunded via UPI. Contact us if you need an alternate refund method.</p>
 
         <h2>8. Contact</h2>
-        <p><strong>refunds@snapfix.in</strong> · +91 77777 77777 · Monday–Saturday, 9 AM – 7 PM</p>
+        <p><strong>refunds@snapfix.in</strong> · +91 93998 58706 · Monday–Saturday, 9 AM – 7 PM</p>
       </div>
     </div>
   );

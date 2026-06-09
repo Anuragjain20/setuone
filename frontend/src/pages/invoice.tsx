@@ -40,7 +40,7 @@ export default function Invoice() {
                 <span className="text-xl font-bold text-[#1A1209]">SnapFix</span>
               </div>
               <p className="text-sm text-[#8A7A68]">India</p>
-              <p className="text-sm text-[#8A7A68]">+91 77777 77777</p>
+              <p className="text-sm text-[#8A7A68]">+91 93998 58706</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-black text-[#1A1209]">INVOICE</p>
@@ -118,7 +118,7 @@ export default function Invoice() {
           {/* Footer */}
           <div className="border-t border-[#EDE8E0] pt-4 mt-6 text-center">
             <p className="text-xs text-[#8A7A68]">Thank you for choosing SnapFix · Book a Fix in a Snap</p>
-            <p className="text-xs text-[#8A7A68]">For support: +91 77777 77777 · snapfix.in</p>
+            <p className="text-xs text-[#8A7A68]">For support: +91 93998 58706 · snapfix.in</p>
           </div>
         </div>
       </div>

@@ -36,7 +36,7 @@ export default function Terms() {
         <p>We may update these terms at any time. Continued use of the platform constitutes acceptance of the updated terms.</p>
 
         <h2>10. Contact</h2>
-        <p>For any legal queries, contact us at: <strong>legal@snapfix.in</strong> or call <strong>+91 77777 77777</strong>.</p>
+        <p>For any legal queries, contact us at: <strong>legal@snapfix.in</strong> or call <strong>+91 93998 58706</strong>.</p>
       </div>
     </div>
   );

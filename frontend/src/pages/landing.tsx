@@ -121,7 +121,7 @@ export default function Landing() {
                   Book on call
                 </Button>
               </Link>
-              <a href={`https://wa.me/${cfg("company_whatsapp", "917777777777")}`} target="_blank" rel="noopener noreferrer">
+              <a href={`https://wa.me/${cfg("company_whatsapp", "919399858706")}`} target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="border-[#D4C5B0] text-[#1A1209] h-12 px-7 text-base font-semibold rounded-xl hover:bg-[#F0EBE1]">
                   <MessageCircle className="mr-2 w-4 h-4 text-green-600" />
                   WhatsApp Us
@@ -367,7 +367,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href={`https://wa.me/${cfg("company_whatsapp", "917777777777")}?text=I%20want%20AMC%20Standard`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://wa.me/${cfg("company_whatsapp", "919399858706")}?text=I%20want%20AMC%20Standard`} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full bg-primary text-white rounded-xl hover:bg-primary/90">Get AMC Standard</Button>
                   </a>
                 </Card>
@@ -389,7 +389,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href={`https://wa.me/${cfg("company_whatsapp", "917777777777")}?text=I%20want%20AMC%20Premium`} target="_blank" rel="noopener noreferrer">
+                  <a href={`https://wa.me/${cfg("company_whatsapp", "919399858706")}?text=I%20want%20AMC%20Premium`} target="_blank" rel="noopener noreferrer">
                     <Button variant="outline" className="w-full border-[#5C4A35] text-white hover:bg-white/10 rounded-xl">Get AMC Premium</Button>
                   </a>
                 </Card>
@@ -506,7 +506,7 @@ export default function Landing() {
                 {cfg("company_name", "SnapFix")}
               </div>
               <p className="text-sm text-[#9A8A78] leading-relaxed">{cfg("company_tagline", "Book a Fix in a Snap")}</p>
-              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 77777 77777")}</p>
+              <p className="text-sm text-[#9A8A78] mt-2">{cfg("company_phone", "+91 93998 58706")}</p>
             </div>
             {/* Services */}
             <div>
